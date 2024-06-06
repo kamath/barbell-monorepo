@@ -1,6 +1,6 @@
 import { Elysia, t } from "elysia";
 import { sendMessage, verifyToken } from "../utils/slack";
-import { askForHelp, openGarage, openGate, open_garage_blocks, open_gate_blocks } from "../utils/openGarage";
+import { askForHelp, openGarage, openGate, open_garage_and_gate_blocks, open_garage_blocks, open_gate_blocks } from "../utils/openGarage";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -49,8 +49,7 @@ type SlackMentionEventBody = {
 type SlackEventBody = SlackChallengeEventBody | SlackMentionEventBody;
 
 app.post("/slack/events", async ({ body }: { body: SlackEventBody }) => {
-	console.log("BODY", body);
-	console.log("Body text", body.event.text);
+	console.log("Slack event body", body);
 	await prisma.endpointHit.create({
 		data: {
 			endpoint: "slack/events",
@@ -58,7 +57,7 @@ app.post("/slack/events", async ({ body }: { body: SlackEventBody }) => {
 		}
 	})
 	if (!verifyToken(body.token)) {
-		return { status: 403 };
+		return { status: 403, token: body.token };
 	}
 	if ('challenge' in body) {
 		return body.challenge;
@@ -68,8 +67,16 @@ app.post("/slack/events", async ({ body }: { body: SlackEventBody }) => {
 		return { status: 200 };
 	}
 	let event: SlackMentionEventBody = body;
-	if (event.event.text.includes('open') || event.event.text.includes('garage')) {
+	if (event.event.text.includes('open')) {
+		const blocks = open_garage_and_gate_blocks();
+		await sendMessage(blocks, event.event.channel, event.event.ts);
+	}
+	else if (event.event.text.includes('garage')) {
 		const blocks = open_garage_blocks();
+		await sendMessage(blocks, event.event.channel, event.event.ts);
+	}
+	else if (event.event.text.includes('gate')) {
+		const blocks = open_gate_blocks();
 		await sendMessage(blocks, event.event.channel, event.event.ts);
 	}
 	console.log("Sent ")
@@ -100,6 +107,9 @@ app.post("/interactivity", async ({ body }: { body: { payload: string } }) => {
 	}
 	if (data.actions[0].action_id === "intent_select") {
 		console.log("Sending message to", data.channel.id, data.message.ts);
+		if (data.actions[0].selected_option.value === "select__both") {
+			await sendMessage(open_garage_and_gate_blocks(), data.channel.id, data.message.ts);
+		}
 		if (data.actions[0].selected_option.value === "select__mission_st") {
 			await sendMessage(open_garage_blocks(), data.channel.id, data.message.ts);
 		}
