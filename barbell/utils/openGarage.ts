@@ -198,6 +198,10 @@ export async function openGarage(prisma: PrismaClient, userId: string) {
 		data: {
 			userId: userId,
 		}
+	});
+	const garageResp = await fetch('https://maker.ifttt.com/trigger/garage_open/with/key/m8rcOHUYrC1iRRiBn0rpiajrbfFH7vj0McyEC2aUxBA', {
+		method: 'POST',
+		mode: 'no-cors'
 	})
 	return [{
 		"type": "section",
