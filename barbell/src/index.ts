@@ -4,9 +4,10 @@ import { askForHelp, openGarage, openGate, open_garage_and_gate_blocks, open_gar
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
+const environment = process.env.ENVIRONMENT || "NO_ENVIRONMENT_SPECIFIED";
 
 const app = new Elysia()
-app.get("/", () => "Barbell is running")
+app.get("/", () => `Barbell is running in ${environment}`)
 
 
 app.post("/slack/events", async ({ body }: { body: SlackEventBody }) => {

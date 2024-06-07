@@ -67,24 +67,33 @@ export const sendMessage = async (blocks: (Block | KnownBlock)[], channel: strin
 };
 
 export enum SlackIntent {
-	SELECT__BOTH = "select__both",
-	SELECT__MISSION_ST = "select__mission_st",
-	SELECT__OTIS_GATE = "select__otis_gate",
+	SELECT__BOTH = "Select both gates",
+	SELECT__MISSION_ST = "Select Mission Gate",
+	SELECT__OTIS_GATE = "Select Otis Gate",
+	DEFAULT = "Default"
+}
+
+export const SlackIntentToBlocks = {
+	[SlackIntent.SELECT__BOTH]: open_garage_and_gate_blocks,
+	[SlackIntent.SELECT__MISSION_ST]: open_garage_blocks,
+	[SlackIntent.SELECT__OTIS_GATE]: open_gate_blocks,
 }
 
 export const generateBlocksFromIntent = async (event: SlackMentionEventBody) => {
+	let blocks = SlackIntent.DEFAULT;
 	if (event.event.text.includes('open')) {
-		return open_garage_and_gate_blocks();
+		blocks = SlackIntent.SELECT__BOTH;
 	}
 	else if (event.event.text.includes('garage')) {
-		return open_garage_blocks();
+		blocks = SlackIntent.SELECT__MISSION_ST;
 	}
 	else if (event.event.text.includes('gate')) {
-		return open_gate_blocks();
+		blocks = SlackIntent.SELECT__OTIS_GATE;
 	}
 	else {
-		return default_blocks();
+		blocks = SlackIntent.SELECT__BOTH;
 	}
+	return SlackIntentToBlocks[blocks]();
 }
 
 export const intentBlocks = [{
@@ -101,7 +110,7 @@ export const intentBlocks = [{
 			"emoji": true
 		},
 		// Loop through the SlackIntent enum and create a list of options
-		"options": Object.entries(SlackIntent).map(([key, value]) => ({
+		"options": Object.entries(SlackIntent).filter(([key, value]) => value !== SlackIntent.DEFAULT).map(([key, value]) => ({
 			"text": {
 				"type": "plain_text",
 				"text": value.replace(/_/g, ' '),
