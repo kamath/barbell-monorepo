@@ -80,6 +80,9 @@ app.post("/slack/events", async ({ body }: { body: SlackEventBody }) => {
 		const blocks = open_gate_blocks();
 		await sendMessage(blocks, event.event.channel, event.event.ts);
 	}
+	else {
+		await sendMessage(default_blocks(), event.event.channel, event.event.ts);
+	}
 	console.log("Sent ")
 	return { status: 200 };
 });
@@ -117,9 +120,6 @@ app.post("/interactivity", async ({ body }: { body: { payload: string } }) => {
 		if (data.actions[0].selected_option.value === "select__otis_gate") {
 			await sendMessage(open_gate_blocks(), data.channel.id, data.message.ts);
 		}
-	}
-	else {
-		await sendMessage(default_blocks(), data.channel.id, data.message.ts);
 	}
 	return { status: 200 };
 });
