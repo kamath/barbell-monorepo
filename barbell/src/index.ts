@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import { SlackEventBody, SlackMentionEventBody, generateBlocksFromIntent, sendMessage, verifyToken } from "../utils/slack";
+import { SlackEventBody, SlackIntent, SlackIntentToBlocks, SlackMentionEventBody, generateBlocksFromIntent, guessIntent, sendMessage, verifyToken } from "../utils/slack";
 import { askForHelp, openGarage, openGate, open_garage_and_gate_blocks, open_garage_blocks, open_gate_blocks } from "../utils/openGarage";
 import { PrismaClient } from "@prisma/client";
 
@@ -30,7 +30,8 @@ app.post("/slack/events", async ({ body }: { body: SlackEventBody }) => {
 		return { status: 200 };
 	}
 	let event: SlackMentionEventBody = body;
-	const blocks = await generateBlocksFromIntent(event);
+	const intent = await guessIntent(event);
+	const blocks = await generateBlocksFromIntent(intent);
 	await sendMessage(blocks, event.event.channel, event.event.ts);
 	console.log("Sent message")
 	return { status: 200 };
@@ -60,15 +61,13 @@ app.post("/interactivity", async ({ body }: { body: { payload: string } }) => {
 	}
 	else if (data.actions[0].action_id === "intent_select") {
 		console.log("Sending message to", data.channel.id, data.message.ts);
-		if (data.actions[0].selected_option.value === "select__both") {
-			await sendMessage(open_garage_and_gate_blocks(), data.channel.id, data.message.ts);
-		}
-		if (data.actions[0].selected_option.value === "select__mission_st") {
-			await sendMessage(open_garage_blocks(), data.channel.id, data.message.ts);
-		}
-		if (data.actions[0].selected_option.value === "select__otis_gate") {
-			await sendMessage(open_gate_blocks(), data.channel.id, data.message.ts);
-		}
+		const intent = data.actions[0].selected_option.value as SlackIntent;
+		const intentValue = SlackIntent[intent as unknown as keyof typeof SlackIntent];
+		console.log("Intent", intent, intentValue)
+		console.log("Slack intent to blocks", SlackIntentToBlocks)
+		const blocks = SlackIntentToBlocks[intentValue]();
+		console.log("Blocks", blocks)
+		await sendMessage(blocks, data.channel.id, data.message.ts);
 	}
 	return { status: 200 };
 });
@@ -77,3 +76,4 @@ app.listen(3000);
 console.log(
 	`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
 );
+

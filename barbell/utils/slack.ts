@@ -4,6 +4,7 @@ import { open_garage_and_gate_blocks, open_garage_blocks, open_gate_blocks } fro
 const SLACK_VERIFICATION_TOKEN = process.env.SLACK_VERIFICATION_TOKEN || "";
 const SEND_WEBHOOK_URL = process.env.SEND_WEBHOOK_URL || "";
 const SLACK_OAUTH_TOKEN = process.env.SLACK_OAUTH_TOKEN || "";
+const ANIRUDH_SLACK_ID = process.env.ANIRUDH_SLACK_ID || "";
 
 export type SlackChallengeEventBody = {
 	type: string;
@@ -66,6 +67,18 @@ export const sendMessage = async (blocks: (Block | KnownBlock)[], channel: strin
 	} as ChatPostMessageArguments);
 };
 
+export const default_blocks = () => {
+	return [
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "It looks like we were unable to find a matched intent for your query. Please try again with a different input."
+			}
+		}
+	]
+}
+
 export enum SlackIntent {
 	SELECT__BOTH = "Select both gates",
 	SELECT__MISSION_ST = "Select Mission Gate",
@@ -73,27 +86,32 @@ export enum SlackIntent {
 	DEFAULT = "Default"
 }
 
-export const SlackIntentToBlocks = {
+export const SlackIntentToBlocks: Record<SlackIntent, () => (Block | KnownBlock)[]> = {
 	[SlackIntent.SELECT__BOTH]: open_garage_and_gate_blocks,
 	[SlackIntent.SELECT__MISSION_ST]: open_garage_blocks,
 	[SlackIntent.SELECT__OTIS_GATE]: open_gate_blocks,
+	[SlackIntent.DEFAULT]: default_blocks
 }
 
-export const generateBlocksFromIntent = async (event: SlackMentionEventBody) => {
-	let blocks = SlackIntent.DEFAULT;
+export const generateBlocksFromIntent = async (intent: SlackIntent) => {
+	return [...SlackIntentToBlocks[intent](), ...intentBlocks];
+}
+
+export const guessIntent = async (event: SlackMentionEventBody) => {
+	let intent = SlackIntent.DEFAULT;
 	if (event.event.text.includes('open')) {
-		blocks = SlackIntent.SELECT__BOTH;
+		intent = SlackIntent.SELECT__BOTH;
 	}
 	else if (event.event.text.includes('garage')) {
-		blocks = SlackIntent.SELECT__MISSION_ST;
+		intent = SlackIntent.SELECT__MISSION_ST;
 	}
 	else if (event.event.text.includes('gate')) {
-		blocks = SlackIntent.SELECT__OTIS_GATE;
+		intent = SlackIntent.SELECT__OTIS_GATE;
 	}
 	else {
-		blocks = SlackIntent.SELECT__BOTH;
+		intent = SlackIntent.DEFAULT;
 	}
-	return SlackIntentToBlocks[blocks]();
+	return intent;
 }
 
 export const intentBlocks = [{
@@ -124,19 +142,6 @@ export const intentBlocks = [{
 	"type": "section",
 	"text": {
 		"type": "mrkdwn",
-		"text": "Slack <@U075FJ5D1SM> if you enjoy using Barbell and would like to deploy internal tooling on Slack"
+		"text": `Slack <@${ANIRUDH_SLACK_ID}> if you enjoy using Barbell and would like to deploy internal tooling on Slack`
 	}
 }]
-
-export const default_blocks = () => {
-	return [
-		{
-			"type": "section",
-			"text": {
-				"type": "mrkdwn",
-				"text": "It looks like we were unable to find a matched intent for your query. Please try again or select an intent below."
-			}
-		},
-		...intentBlocks
-	]
-}
