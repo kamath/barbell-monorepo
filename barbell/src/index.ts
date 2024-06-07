@@ -1,52 +1,13 @@
 import { Elysia, t } from "elysia";
-import { sendMessage, verifyToken } from "../utils/slack";
-import { askForHelp, default_blocks, openGarage, openGate, open_garage_and_gate_blocks, open_garage_blocks, open_gate_blocks } from "../utils/openGarage";
+import { SlackEventBody, SlackMentionEventBody, generateBlocksFromIntent, sendMessage, verifyToken } from "../utils/slack";
+import { askForHelp, openGarage, openGate, open_garage_and_gate_blocks, open_garage_blocks, open_gate_blocks } from "../utils/openGarage";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 const app = new Elysia()
-app.get("/", () => "Hello Elysia")
-type SlackChallengeEventBody = {
-	type: string;
-	token: string;
-	challenge: string;
-	[propName: string]: any; // This allows for additional properties
-}
+app.get("/", () => "Barbell is running")
 
-type SlackMentionEventBody = {
-	type: string,
-	event_id: string,
-	event_time: number,
-	token: string,
-	team_id: string,
-	api_app_id: string,
-	event: {
-		user: string,
-		type: "app_mention",
-		ts: string,
-		client_msg_id: string,
-		text: string,
-		team: string,
-		blocks: {
-			type: string,
-			block_id: string,
-			elements: any[]
-		}[],
-		channel: string,
-		event_ts: string,
-		message?: any
-	},
-	authorizations: {
-		enterprise_id: string | null,
-		team_id: string,
-		user_id: string,
-		is_bot: boolean,
-		is_enterprise_install: boolean
-	}
-};
-
-type SlackEventBody = SlackChallengeEventBody | SlackMentionEventBody;
 
 app.post("/slack/events", async ({ body }: { body: SlackEventBody }) => {
 	console.log("Slack event body", body);
@@ -68,22 +29,9 @@ app.post("/slack/events", async ({ body }: { body: SlackEventBody }) => {
 		return { status: 200 };
 	}
 	let event: SlackMentionEventBody = body;
-	if (event.event.text.includes('open')) {
-		const blocks = open_garage_and_gate_blocks();
-		await sendMessage(blocks, event.event.channel, event.event.ts);
-	}
-	else if (event.event.text.includes('garage')) {
-		const blocks = open_garage_blocks();
-		await sendMessage(blocks, event.event.channel, event.event.ts);
-	}
-	else if (event.event.text.includes('gate')) {
-		const blocks = open_gate_blocks();
-		await sendMessage(blocks, event.event.channel, event.event.ts);
-	}
-	else {
-		await sendMessage(default_blocks(), event.event.channel, event.event.ts);
-	}
-	console.log("Sent ")
+	const blocks = await generateBlocksFromIntent(event);
+	await sendMessage(blocks, event.event.channel, event.event.ts);
+	console.log("Sent message")
 	return { status: 200 };
 });
 
