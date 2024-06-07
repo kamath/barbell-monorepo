@@ -18,7 +18,7 @@ export default function Home() {
 				</div>
 				<div className="w-full flex flex-col gap-4">
 					<h1 className="text-4xl md:text-8xl font-bold w-full left-0 text-center">Barbell cURLs</h1>
-					<h3 className="text-lg md:text-4xl w-full left-0 text-center">Coming Soon.</h3>
+					<h3 className="text-lg md:text-3xl w-full left-0 text-center">Email <a href="mailto:anirudh@kamath.io" className="underline">anirudh@kamath.io</a> to get started.</h3>
 				</div>
 			</div>
 		</main>
