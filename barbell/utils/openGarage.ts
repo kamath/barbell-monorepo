@@ -3,55 +3,6 @@ import { sendMessage } from "./slack";
 
 const ALERT_CHANNEL_ID = process.env.ALERT_CHANNEL_ID || ""
 
-const intents = [{
-	"type": "section",
-	"text": {
-		"type": "mrkdwn",
-		"text": "...or select a different intent from the list:"
-	},
-	"accessory": {
-		"type": "static_select",
-		"placeholder": {
-			"type": "plain_text",
-			"text": "Select an item",
-			"emoji": true
-		},
-		"options": [
-			{
-				"text": {
-					"type": "plain_text",
-					"text": "Open Garage and Gate",
-					"emoji": true
-				},
-				"value": "select__both"
-			},
-			{
-				"text": {
-					"type": "plain_text",
-					"text": "Open Mission St. Garage",
-					"emoji": true
-				},
-				"value": "select__mission_st"
-			},
-			{
-				"text": {
-					"type": "plain_text",
-					"text": "Open Otis Gate",
-					"emoji": true
-				},
-				"value": "select__otis_gate"
-			},
-		],
-		"action_id": "intent_select"
-	}
-}, {
-	"type": "section",
-	"text": {
-		"type": "mrkdwn",
-		"text": "Slack <@U075FJ5D1SM> if you enjoy using Barbell and would like to deploy internal tooling on Slack"
-	}
-}]
-
 export const open_garage_and_gate_blocks = () => {
 	return [
 		{
@@ -98,8 +49,7 @@ export const open_garage_and_gate_blocks = () => {
 					"action_id": "click__ask_for_help"
 				}
 			]
-		},
-		...intents
+		}
 	]
 }
 
@@ -138,8 +88,7 @@ export const open_garage_blocks = () => {
 					"action_id": "click__ask_for_help"
 				}
 			]
-		},
-		...intents
+		}
 	]
 }
 
@@ -178,8 +127,7 @@ export const open_gate_blocks = () => {
 					"action_id": "click__ask_for_help"
 				}
 			]
-		},
-		...intents
+		}
 	]
 }
 
@@ -300,17 +248,4 @@ export async function askForHelp(userId: string) {
 			"text": "Solaris Admin has been notified and will come to help ASAP"
 		}
 	}]
-}
-
-export const default_blocks = () => {
-	return [
-		{
-			"type": "section",
-			"text": {
-				"type": "mrkdwn",
-				"text": "It looks like we were unable to find a matched intent for your query. Please try again or select an intent below."
-			}
-		},
-		...intents
-	]
 }

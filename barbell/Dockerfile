@@ -1,6 +1,7 @@
 FROM oven/bun:latest
 
 COPY . .
+COPY .env.production .env
 
 RUN bun install
 RUN bunx prisma generate
