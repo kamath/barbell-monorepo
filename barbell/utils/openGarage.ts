@@ -199,29 +199,83 @@ export async function openGarage(prisma: PrismaClient, userId: string) {
 			userId: userId,
 		}
 	});
-	await fetch('https://maker.ifttt.com/trigger/garage_open/with/key/m8rcOHUYrC1iRRiBn0rpiajrbfFH7vj0McyEC2aUxBA', {
-		method: 'POST',
-		mode: 'no-cors'
-	})
-	return [{
-		"type": "section",
-		"text": {
-			"type": "mrkdwn",
-			"text": "Opening Garage! Please wait a few seconds..."
+	try {
+		const response = await fetch('https://maker.ifttt.com/trigger/mission_garage_open/with/key/m8rcOHUYrC1iRRiBn0rpicYCXtNWOyHisDwlwK_NY1R', {
+			method: 'POST',
+			mode: 'no-cors'
+		})
+		if (response.status !== 200) {
+			throw new Error("Failed to open gate")
 		}
-	}]
+		return [{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Opening Garage! Please wait a few seconds..."
+			}
+		}]
+	} catch (e) {
+		console.log("Error opening gate", e)
+		return [{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Error opening garage, please try again in a few seconds."
+			}
+		}]
+	}
 }
 
-export async function openGate() {
+export async function openGate(prisma: PrismaClient, userId: string) {
 	console.log("Opening Gate");
 
-	return [{
-		"type": "section",
-		"text": {
-			"type": "mrkdwn",
-			"text": "This is still a WIP, please use the physical clicker to open this gate"
+	console.log("Opening gate")
+	const lastOpened = await prisma.gateLastOpened.findFirst({
+		orderBy: {
+			createdAt: 'desc'
 		}
-	}]
+	})
+	console.log("Last Opened: ", lastOpened)
+	if (lastOpened && lastOpened.createdAt.getTime() > Date.now() - 1000 * 10) {
+		return [{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "It hasn't been ten seconds since the last person attempted to open the gate, please try again later"
+			}
+		}]
+	}
+	await prisma.gateLastOpened.create({
+		data: {
+			userId: userId,
+		}
+	});
+	try {
+		const response = await fetch('https://maker.ifttt.com/trigger/otis_garage_open/with/key/m8rcOHUYrC1iRRiBn0rpicYCXtNWOyHisDwlwK_NY1R', {
+			method: 'POST',
+			mode: 'no-cors'
+		})
+		if (response.status !== 200) {
+			throw new Error("Failed to open gate")
+		}
+		return [{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Opening Gate! Please wait a few seconds..."
+			}
+		}]
+	} catch (e) {
+		console.log("Error opening gate", e)
+		return [{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Error opening gate, please try again in a few seconds."
+			}
+		}]
+	}
+
 }
 
 export async function askForHelp() {

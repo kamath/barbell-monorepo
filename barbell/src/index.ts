@@ -57,6 +57,7 @@ app.post("/slack/events", async ({ body }: { body: SlackEventBody }) => {
 		}
 	})
 	if (!verifyToken(body.token)) {
+		console.log("Expected token", process.env.SLACK_VERIFICATION_TOKEN, "but got", body.token)
 		return { status: 403, token: body.token };
 	}
 	if ('challenge' in body) {
@@ -97,7 +98,7 @@ app.post("/interactivity", async ({ body }: { body: { payload: string } }) => {
 		await sendMessage(blocks, data.channel.id, data.message.ts);
 	}
 	if (data.actions[0].action_id === "click__open_otis_gate") {
-		const blocks = await openGate();
+		const blocks = await openGate(prisma, data.user.id);
 		await sendMessage(blocks, data.channel.id, data.message.ts);
 	}
 	if (data.actions[0].action_id === "click__ask_for_help") {

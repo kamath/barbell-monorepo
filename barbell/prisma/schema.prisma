@@ -21,6 +21,13 @@ model GarageLastOpened {
     userId    String
 }
 
+model GateLastOpened {
+    id        String   @id @default(uuid())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    userId    String
+}
+
 model EndpointHit {
     id        String   @id @default(uuid())
     createdAt DateTime @default(now())
