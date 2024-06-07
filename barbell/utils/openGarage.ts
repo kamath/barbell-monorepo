@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { sendMessage } from "./slack";
 
-const ALERT_CHANNEL_ID = 'C076B7XL3B9'
+const ALERT_CHANNEL_ID = process.env.ALERT_CHANNEL_ID || ""
 
 const intents = [{
 	"type": "section",
