@@ -199,7 +199,7 @@ export async function openGarage(prisma: PrismaClient, userId: string) {
 			userId: userId,
 		}
 	});
-	const garageResp = await fetch('https://maker.ifttt.com/trigger/garage_open/with/key/m8rcOHUYrC1iRRiBn0rpiajrbfFH7vj0McyEC2aUxBA', {
+	await fetch('https://maker.ifttt.com/trigger/garage_open/with/key/m8rcOHUYrC1iRRiBn0rpiajrbfFH7vj0McyEC2aUxBA', {
 		method: 'POST',
 		mode: 'no-cors'
 	})
@@ -213,7 +213,8 @@ export async function openGarage(prisma: PrismaClient, userId: string) {
 }
 
 export async function openGate() {
-	console.log("Opening Gate")
+	console.log("Opening Gate");
+
 	return [{
 		"type": "section",
 		"text": {
@@ -224,7 +225,7 @@ export async function openGate() {
 }
 
 export async function askForHelp() {
-	console.log("Opening Gate")
+	console.log("Asking for Help")
 	await sendMessage([{
 		"type": "section",
 		"text": {
