@@ -1,6 +1,6 @@
 import { Elysia, t } from "elysia";
 import { sendMessage, verifyToken } from "../utils/slack";
-import { askForHelp, openGarage, openGate, open_garage_and_gate_blocks, open_garage_blocks, open_gate_blocks } from "../utils/openGarage";
+import { askForHelp, default_blocks, openGarage, openGate, open_garage_and_gate_blocks, open_garage_blocks, open_gate_blocks } from "../utils/openGarage";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -97,16 +97,16 @@ app.post("/interactivity", async ({ body }: { body: { payload: string } }) => {
 		const blocks = await openGarage(prisma, data.user.id);
 		await sendMessage(blocks, data.channel.id, data.message.ts);
 	}
-	if (data.actions[0].action_id === "click__open_otis_gate") {
+	else if (data.actions[0].action_id === "click__open_otis_gate") {
 		const blocks = await openGate(prisma, data.user.id);
 		await sendMessage(blocks, data.channel.id, data.message.ts);
 	}
-	if (data.actions[0].action_id === "click__ask_for_help") {
+	else if (data.actions[0].action_id === "click__ask_for_help") {
 		console.log("Sending message to", data.channel.id, data.message.ts);
-		const helpBlocks = await askForHelp();
+		const helpBlocks = await askForHelp(data.user.id);
 		await sendMessage(helpBlocks, data.channel.id, data.message.ts);
 	}
-	if (data.actions[0].action_id === "intent_select") {
+	else if (data.actions[0].action_id === "intent_select") {
 		console.log("Sending message to", data.channel.id, data.message.ts);
 		if (data.actions[0].selected_option.value === "select__both") {
 			await sendMessage(open_garage_and_gate_blocks(), data.channel.id, data.message.ts);
@@ -117,6 +117,9 @@ app.post("/interactivity", async ({ body }: { body: { payload: string } }) => {
 		if (data.actions[0].selected_option.value === "select__otis_gate") {
 			await sendMessage(open_gate_blocks(), data.channel.id, data.message.ts);
 		}
+	}
+	else {
+		await sendMessage(default_blocks(), data.channel.id, data.message.ts);
 	}
 	return { status: 200 };
 });

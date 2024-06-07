@@ -44,6 +44,12 @@ const intents = [{
 		],
 		"action_id": "intent_select"
 	}
+}, {
+	"type": "section",
+	"text": {
+		"type": "mrkdwn",
+		"text": "Slack <@U075FJ5D1SM> if you enjoy using Barbell and would like to deploy internal tooling on Slack"
+	}
 }]
 
 export const open_garage_and_gate_blocks = () => {
@@ -278,13 +284,13 @@ export async function openGate(prisma: PrismaClient, userId: string) {
 
 }
 
-export async function askForHelp() {
+export async function askForHelp(userId: string) {
 	console.log("Asking for Help")
 	await sendMessage([{
 		"type": "section",
 		"text": {
 			"type": "mrkdwn",
-			"text": "@channel someone is requesting help immediately in the garage"
+			"text": "@channel someone (<@" + userId + ">) is requesting help immediately in the garage"
 		}
 	}], ALERT_CHANNEL_ID);
 	return [{
@@ -294,4 +300,17 @@ export async function askForHelp() {
 			"text": "Solaris Admin has been notified and will come to help ASAP"
 		}
 	}]
+}
+
+export const default_blocks = () => {
+	return [
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "It looks like we were unable to find a matched intent for your query. Please try again or select an intent below."
+			}
+		},
+		...intents
+	]
 }
