@@ -13,6 +13,7 @@ plan: init
 
 apply: init
 	cd iac && terraform apply -var-file=secrets.tfvars
+	cd iac && terraform output -raw ecs_task_definition_json > task_definition.json
 
 run: run-ngrok
 	cd barbell && bun run --hot src/index.ts
@@ -30,3 +31,5 @@ deploy-ecr: build
 
 deploy: deploy-ecr
 	aws ecs update-service --cluster ${ECS_CLUSTER} --service ${ECS_SERVICE} --force-new-deployment --region ${DEFAULT_AWS_REGION}
+
+	

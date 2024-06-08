@@ -116,3 +116,77 @@ resource "aws_iam_role_policy_attachment" "vpc_flow_log_policy_attachment" {
   role       = aws_iam_role.vpc_flow_log_role.name
   policy_arn = aws_iam_policy.vpc_flow_log_policy.arn
 }
+
+# IAM user for github actions to deploy to ECR and ECS
+resource "aws_iam_user" "github_user" {
+  name = "github-user"
+  path = "/"
+}
+
+resource "aws_iam_user_policy" "github_user_ecr_policy" {
+  name = "github-user-ecr-policy"
+  user = aws_iam_user.github_user.name
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect   = "Allow",
+        Action   = "ecr:GetAuthorizationToken",
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload",
+          "ecr:PutImage",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:BatchGetImage",
+          "ecr:DescribeImages",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:GetRepositoryPolicy",
+          "ecr:PutImage",
+          "ecs:CreateService",
+          "ecs:CreateCluster",
+          "ecs:RegisterTaskDefinition",
+          "ecs:UpdateService",
+          "ecs:DescribeClusters",
+          "ecs:DescribeServices",
+          "ecs:DescribeTaskDefinition",
+          "ecs:DescribeTasks",
+          "ecs:ListClusters",
+          "ecs:ListServices",
+          "ecs:ListTaskDefinitions",
+          "ecs:ListTasks",
+          "ecs:DeleteCluster",
+          "ecs:DeleteService",
+          "ecs:DeregisterTaskDefinition"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ],
+        Resource = "arn:aws:s3:::miracle-ml/terraform/*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "acm:Describe*",
+          "ec2:Describe*",
+          "ecr:Describe*",
+          "logs:Describe*",
+          "iam:PassRole",
+          "iam:GetRole",
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
