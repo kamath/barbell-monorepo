@@ -14,8 +14,11 @@ plan: init
 apply: init
 	cd iac && terraform apply -var-file=secrets.tfvars
 
-run:
+run: run-ngrok
 	cd barbell && bun run --hot src/index.ts
+
+run-ngrok:
+	ngrok http --domain=${NGROK_URL} 3000
 
 build:
 	cd barbell && docker build -t ${BACKEND_AWS_ECR_REPO} . --platform=linux/amd64
@@ -27,4 +30,3 @@ deploy-ecr: build
 
 deploy: deploy-ecr
 	aws ecs update-service --cluster ${ECS_CLUSTER} --service ${ECS_SERVICE} --force-new-deployment --region ${DEFAULT_AWS_REGION}
-
