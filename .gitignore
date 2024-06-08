@@ -1,1 +1,11 @@
 .env
+*/.env
+*/*/.env
+*/*/*/.env
+dev/new_new_sub_utils/*/*.js
+dev/new_new_sub_utils/*/*/*.js
+dev/new_new_sub_utils/*.js
+
+
+
+# Ignore all .env file

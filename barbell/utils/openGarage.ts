@@ -41,6 +41,7 @@ const intents = [{
 				},
 				"value": "select__otis_gate"
 			},
+			
 		],
 		"action_id": "intent_select"
 	}
@@ -98,8 +99,7 @@ export const open_garage_and_gate_blocks = () => {
 					"action_id": "click__ask_for_help"
 				}
 			]
-		},
-		...intents
+		}
 	]
 }
 
@@ -110,6 +110,18 @@ export const open_garage_blocks = () => {
 			"text": {
 				"type": "mrkdwn",
 				"text": "Assumed Intent: *Open the Mission St. Garage*\nClicking the button below will open the Mission St. Garage"
+			}
+		},
+		{
+			"type": "input",
+			"element": {
+				"type": "plain_text_input",
+				"action_id": "plain_text_input-action"
+			},
+			"label": {
+				"type": "plain_text",
+				"text": "Label",
+				"emoji": true
 			}
 		},
 		{
@@ -138,8 +150,7 @@ export const open_garage_blocks = () => {
 					"action_id": "click__ask_for_help"
 				}
 			]
-		},
-		...intents
+		}
 	]
 }
 
@@ -178,8 +189,7 @@ export const open_gate_blocks = () => {
 					"action_id": "click__ask_for_help"
 				}
 			]
-		},
-		...intents
+		}
 	]
 }
 
@@ -300,17 +310,4 @@ export async function askForHelp(userId: string) {
 			"text": "Solaris Admin has been notified and will come to help ASAP"
 		}
 	}]
-}
-
-export const default_blocks = () => {
-	return [
-		{
-			"type": "section",
-			"text": {
-				"type": "mrkdwn",
-				"text": "It looks like we were unable to find a matched intent for your query. Please try again or select an intent below."
-			}
-		},
-		...intents
-	]
 }
