@@ -72,3 +72,39 @@ resource "aws_instance" "main_backend_web" {
     Name = "main_backend_web_${count.index}"
   }
 }
+
+// Create an EC2 instance named "main_backend_web"
+resource "aws_instance" "main_backend_web2" {
+  // count is the number of instance we want
+  // since the variable settings.web_app.cont is set to 1, we will only get 1 EC2
+  count = var.settings.web_app.count
+
+  // Here we need to select the ami for the EC2. We are going to use the
+  // ami data object we created called ubuntu, which is grabbing the latest
+  // Ubuntu 20.04 ami
+  ami = data.aws_ami.ubuntu.id
+
+  // This is the instance type of the EC2 instance. The variable
+  // settings.web_app.instance_type is set to "t2.micro"
+  instance_type = var.settings.web_app.instance_type
+
+  // The subnet ID for the EC2 instance. Since "main_backend_public_subnet" is a list
+  // of public subnets, we want to grab the element based on the count variable.
+  // Since count is 1, we will be grabbing the first subnet in
+  // "main_backend_public_subnet" and putting the EC2 instance in there
+  subnet_id = aws_subnet.main_backend_public_subnet[count.index].id
+
+  // The key pair to connect to the EC2 instance. We are using the "main_backend_kp" key
+  // pair that we created
+  key_name = aws_key_pair.main_backend_kp.key_name
+
+  // The security groups of the EC2 instance. This takes a list, however we only
+  // have 1 security group for the EC2 instances.
+  vpc_security_group_ids = [aws_security_group.main_backend_web_sg.id]
+
+  // We are tagging the EC2 instance with the name "main_backend_db_" followed by
+  // the count index
+  tags = {
+    Name = "main_backend_web_${count.index}"
+  }
+}
