@@ -54,6 +54,11 @@ const client = new WebClient(SLACK_OAUTH_TOKEN, {
 	logLevel: LogLevel.DEBUG
 });
 
+export const readChannelMembers = async (channel: string) => {
+	const members = await client.conversations.members({ channel });
+	return members.members;
+}
+
 export const verifyToken = (token: string) => {
 	return token === SLACK_VERIFICATION_TOKEN;
 }

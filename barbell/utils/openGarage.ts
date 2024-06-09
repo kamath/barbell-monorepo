@@ -1,7 +1,9 @@
 import { PrismaClient } from "@prisma/client";
-import { sendMessage } from "./slack";
+import { readChannelMembers, sendMessage } from "./slack";
 
 const ALERT_CHANNEL_ID = process.env.ALERT_CHANNEL_ID || ""
+const PARKING_CHANNEL_ID = process.env.PARKING_CHANNEL_ID || ""
+const JACOB_SLACK_ID = process.env.JACOB_SLACK_ID || "";
 
 const intents = [{
 	"type": "section",
@@ -41,7 +43,7 @@ const intents = [{
 				},
 				"value": "select__otis_gate"
 			},
-			
+
 		],
 		"action_id": "intent_select"
 	}
@@ -195,6 +197,19 @@ export const open_gate_blocks = () => {
 
 export async function openGarage(prisma: PrismaClient, userId: string) {
 	console.log("Opening Garage")
+
+	const members = await readChannelMembers(PARKING_CHANNEL_ID)
+	if (!members?.includes(userId)) {
+		console.error("User not in parking channel: ", userId, members)
+		return [{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": `You are not in the approved users to park in Solaris parking; if this is an error please contact <@${JACOB_SLACK_ID}>`
+			}
+		}]
+	}
+
 	const lastOpened = await prisma.garageLastOpened.findFirst({
 		orderBy: {
 			createdAt: 'desc'
@@ -245,7 +260,17 @@ export async function openGarage(prisma: PrismaClient, userId: string) {
 export async function openGate(prisma: PrismaClient, userId: string) {
 	console.log("Opening Gate");
 
-	console.log("Opening gate")
+	const members = await readChannelMembers(PARKING_CHANNEL_ID)
+	if (!members?.includes(userId)) {
+		console.error("User not in parking channel: ", userId, members)
+		return [{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": `You are not in the approved users to park in Solaris parking; if this is an error please contact <@${JACOB_SLACK_ID}>`
+			}
+		}]
+	}
 	const lastOpened = await prisma.gateLastOpened.findFirst({
 		orderBy: {
 			createdAt: 'desc'
@@ -278,7 +303,7 @@ export async function openGate(prisma: PrismaClient, userId: string) {
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "Opening Gate! Please wait a few seconds..."
+				"text": `Opening Gate! Please wait a few seconds...`
 			}
 		}]
 	} catch (e) {
