@@ -32,4 +32,5 @@ deploy-ecr: build
 deploy: deploy-ecr
 	aws ecs update-service --cluster ${ECS_CLUSTER} --service ${ECS_SERVICE} --force-new-deployment --region ${DEFAULT_AWS_REGION}
 
-	
+run-landing-page:
+	cd landing-page && bunx next dev
