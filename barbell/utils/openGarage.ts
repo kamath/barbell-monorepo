@@ -200,7 +200,7 @@ export async function openGarage(prisma: PrismaClient, userId: string) {
 
 	const members = await readChannelMembers(PARKING_CHANNEL_ID)
 	if (!members?.includes(userId)) {
-		console.error("User not in parking channel: ", userId, members)
+		console.error("User not in parking channel for garage: ", userId, members)
 		return [{
 			"type": "section",
 			"text": {
@@ -262,7 +262,7 @@ export async function openGate(prisma: PrismaClient, userId: string) {
 
 	const members = await readChannelMembers(PARKING_CHANNEL_ID)
 	if (!members?.includes(userId)) {
-		console.error("User not in parking channel: ", userId, members)
+		console.error("User not in parking channel for gate: ", userId, members)
 		return [{
 			"type": "section",
 			"text": {
