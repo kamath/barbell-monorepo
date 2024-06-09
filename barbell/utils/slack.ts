@@ -54,6 +54,11 @@ const client = new WebClient(SLACK_OAUTH_TOKEN, {
 	logLevel: LogLevel.DEBUG
 });
 
+export const readChannelMembers = async (channel: string) => {
+	const members = await client.conversations.members({ channel });
+	return members.members;
+}
+
 export const verifyToken = (token: string) => {
 	return token === SLACK_VERIFICATION_TOKEN;
 }
@@ -99,13 +104,13 @@ export const generateBlocksFromIntent = async (intent: SlackIntent) => {
 
 export const guessIntent = async (event: SlackMentionEventBody) => {
 	let intent = SlackIntent.DEFAULT;
-	if (event.event.text.includes('open')) {
+	if (event.event.text.toLowerCase().includes('open')) {
 		intent = SlackIntent.SELECT__BOTH;
 	}
-	else if (event.event.text.includes('garage')) {
+	else if (event.event.text.toLowerCase().includes('garage')) {
 		intent = SlackIntent.SELECT__MISSION_ST;
 	}
-	else if (event.event.text.includes('gate')) {
+	else if (event.event.text.toLowerCase().includes('gate')) {
 		intent = SlackIntent.SELECT__OTIS_GATE;
 	}
 	else {
