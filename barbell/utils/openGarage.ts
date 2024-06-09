@@ -115,18 +115,6 @@ export const open_garage_blocks = () => {
 			}
 		},
 		{
-			"type": "input",
-			"element": {
-				"type": "plain_text_input",
-				"action_id": "plain_text_input-action"
-			},
-			"label": {
-				"type": "plain_text",
-				"text": "Label",
-				"emoji": true
-			}
-		},
-		{
 			"type": "actions",
 			"elements": [
 				{
