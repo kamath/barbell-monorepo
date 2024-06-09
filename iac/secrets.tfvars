@@ -1,2 +1,0 @@
-my_ip          = "108.223.44.245"
-ec2_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDhjwNyUDtsIIFn3Bz7TCwJKaUmOpTLMxz5DHdEmsE95BiplvVdD7IufyvQyKPjX+IbK3UrNTt97Ehxl7jR7mRBQ1kip44xzpkmZEQh7lXmAlgk+ZLuro5z7e0NF7C7JxVPE6Ng9S8lHlhhOaafmc37pNHYd2kIwOvitAVyj5b6WuMBdF7Ssn+fOb1fSPMD6049n3vSodJawm3R/jAzRVOfAv4ZA9SzrboZDdTPLqy1KuiVrT714d1284cizi3BWRyhjixtnAlLIwcjq21ksuXkAz3B+Y0/pTCnvKADnq78w4+EjLjN8htKezDk0WyeyqzAJQln1BnhTlFjfSA2SyEL anirudhkamath@Anirudhs-MBP.local.meter"
