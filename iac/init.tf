@@ -24,3 +24,13 @@ terraform {
 provider "aws" {
   region = var.aws_region
 }
+
+// Creating a new S3 bucket
+resource "aws_s3_bucket" "new_bucket" {
+  bucket = "new-unique-bucket-name-swagagsfnsdnf"
+
+  tags = {
+    Name        = "New Unique Bucket"
+    Environment = "Development"
+  }
+}
