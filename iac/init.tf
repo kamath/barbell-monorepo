@@ -8,6 +8,13 @@ terraform {
     }
   }
 
+  cloud {
+    organization = "Barbell"
+    workspaces {
+      name = "barbell-monorepo"
+    }
+  }
+
   required_version = ">= 1.2.0"
 }
 
