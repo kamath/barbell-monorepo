@@ -15,7 +15,7 @@ apply: init
 	cd iac && terraform apply -var-file=secrets.tfvars
 	cd iac && terraform output -raw ecs_task_definition_json > task_definition.json
 
-run: run-ngrok
+run:
 	cd barbell && bun run --hot src/index.ts
 
 run-ngrok:

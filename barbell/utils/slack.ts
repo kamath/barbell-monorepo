@@ -1,5 +1,7 @@
-import { WebClient, LogLevel, Block, KnownBlock, ChatPostMessageArguments } from "@slack/web-api";
+import { WebClient, LogLevel, Block, KnownBlock, ChatPostMessageArguments, ViewsPublishArguments, ModalView } from "@slack/web-api";
 import { open_garage_and_gate_blocks, open_garage_blocks, open_gate_blocks } from "./openGarage";
+import { replyToThread } from "./conversationThread";
+import { publishTestHomeTab } from "./homeTab";
 
 const SLACK_VERIFICATION_TOKEN = process.env.SLACK_VERIFICATION_TOKEN || "";
 const SEND_WEBHOOK_URL = process.env.SEND_WEBHOOK_URL || "";
@@ -22,7 +24,7 @@ export type SlackMentionEventBody = {
 	api_app_id: string,
 	event: {
 		user: string,
-		type: "app_mention",
+		type: "app_mention" | "app_home_opened",
 		ts: string,
 		client_msg_id: string,
 		text: string,
@@ -59,6 +61,17 @@ export const readChannelMembers = async (channel: string) => {
 	return members.members;
 }
 
+export const publishHomeTab = async (user_id: string, homeTabGenerator: (user_id: string) => Promise<ViewsPublishArguments>) => {
+	const homeTab = await homeTabGenerator(user_id);
+	await client.views.publish(homeTab);
+	console.log("Published home tab", homeTab);
+	return { status: 200 };
+}
+
+export const openModal = async (trigger_id: string, modalBlocks: ModalView) => {
+	await client.views.open({ trigger_id, view: modalBlocks });
+}
+
 export const verifyToken = (token: string) => {
 	return token === SLACK_VERIFICATION_TOKEN;
 }
@@ -88,6 +101,7 @@ export enum SlackIntent {
 	SELECT__BOTH = "Select both gates",
 	SELECT__MISSION_ST = "Select Mission Gate",
 	SELECT__OTIS_GATE = "Select Otis Gate",
+	REPLY_TO_THREAD = "Reply to thread",
 	DEFAULT = "Default"
 }
 
@@ -95,6 +109,7 @@ export const SlackIntentToBlocks: Record<SlackIntent, () => (Block | KnownBlock)
 	[SlackIntent.SELECT__BOTH]: open_garage_and_gate_blocks,
 	[SlackIntent.SELECT__MISSION_ST]: open_garage_blocks,
 	[SlackIntent.SELECT__OTIS_GATE]: open_gate_blocks,
+	[SlackIntent.REPLY_TO_THREAD]: replyToThread,
 	[SlackIntent.DEFAULT]: default_blocks
 }
 
@@ -113,40 +128,51 @@ export const guessIntent = async (event: SlackMentionEventBody) => {
 	else if (event.event.text.toLowerCase().includes('gate')) {
 		intent = SlackIntent.SELECT__OTIS_GATE;
 	}
+	else if (event.event.text.toLowerCase().includes('reply')) {
+		intent = SlackIntent.REPLY_TO_THREAD;
+	}
 	else {
 		intent = SlackIntent.DEFAULT;
 	}
 	return intent;
 }
 
-export const intentBlocks = [{
-	"type": "section",
-	"text": {
-		"type": "mrkdwn",
-		"text": "...or select a different intent from the list:"
-	},
-	"accessory": {
-		"type": "static_select",
-		"placeholder": {
-			"type": "plain_text",
-			"text": "Select an item",
-			"emoji": true
+export const intentBlocks = [
+	{
+		"type": "section",
+		"text": {
+			"type": "mrkdwn",
+			"text": "\n\n" // spacer
 		},
-		// Loop through the SlackIntent enum and create a list of options
-		"options": Object.entries(SlackIntent).filter(([key, value]) => value !== SlackIntent.DEFAULT).map(([key, value]) => ({
-			"text": {
+	},
+	{
+		"type": "section",
+		"text": {
+			"type": "mrkdwn",
+			"text": "\n\n...or select a different intent from the list:"
+		},
+		"accessory": {
+			"type": "static_select",
+			"placeholder": {
 				"type": "plain_text",
-				"text": value.replace(/_/g, ' '),
+				"text": "Select an item",
 				"emoji": true
 			},
-			"value": key
-		})),
-		"action_id": "intent_select"
-	}
-}, {
-	"type": "section",
-	"text": {
-		"type": "mrkdwn",
-		"text": `Slack <@${ANIRUDH_SLACK_ID}> if you enjoy using Barbell and would like to deploy internal tooling on Slack`
-	}
-}]
+			// Loop through the SlackIntent enum and create a list of options
+			"options": Object.entries(SlackIntent).filter(([key, value]) => value !== SlackIntent.DEFAULT).map(([key, value]) => ({
+				"text": {
+					"type": "plain_text",
+					"text": value.replace(/_/g, ' '),
+					"emoji": true
+				},
+				"value": key
+			})),
+			"action_id": "intent_select"
+		}
+	}, {
+		"type": "section",
+		"text": {
+			"type": "mrkdwn",
+			"text": `Slack <@${ANIRUDH_SLACK_ID}> if you enjoy using Barbell and would like to deploy internal tooling on Slack`
+		}
+	}]

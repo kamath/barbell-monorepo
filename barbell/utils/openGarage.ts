@@ -5,56 +5,6 @@ const ALERT_CHANNEL_ID = process.env.ALERT_CHANNEL_ID || ""
 const PARKING_CHANNEL_ID = process.env.PARKING_CHANNEL_ID || ""
 const JACOB_SLACK_ID = process.env.JACOB_SLACK_ID || "";
 
-const intents = [{
-	"type": "section",
-	"text": {
-		"type": "mrkdwn",
-		"text": "...or select a different intent from the list:"
-	},
-	"accessory": {
-		"type": "static_select",
-		"placeholder": {
-			"type": "plain_text",
-			"text": "Select an item",
-			"emoji": true
-		},
-		"options": [
-			{
-				"text": {
-					"type": "plain_text",
-					"text": "Open Garage and Gate",
-					"emoji": true
-				},
-				"value": "select__both"
-			},
-			{
-				"text": {
-					"type": "plain_text",
-					"text": "Open Mission St. Garage",
-					"emoji": true
-				},
-				"value": "select__mission_st"
-			},
-			{
-				"text": {
-					"type": "plain_text",
-					"text": "Open Otis Gate",
-					"emoji": true
-				},
-				"value": "select__otis_gate"
-			},
-
-		],
-		"action_id": "intent_select"
-	}
-}, {
-	"type": "section",
-	"text": {
-		"type": "mrkdwn",
-		"text": "Slack <@U075FJ5D1SM> if you enjoy using Barbell and would like to deploy internal tooling on Slack"
-	}
-}]
-
 export const open_garage_and_gate_blocks = () => {
 	return [
 		{
