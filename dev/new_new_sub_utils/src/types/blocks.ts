@@ -1,5 +1,5 @@
     
-export type InputType = 'email' | 'date' | 'user_select' | 'plain_text_input' | 'static_select' | 'button_action';
+export type InputType = 'email' | 'date' | 'user_select' | 'plain_text_input' | 'static_select' | 'button_action' | 'rich_text';
 
 export interface InputParameters {
   email?: {
@@ -16,11 +16,14 @@ export interface InputParameters {
   };
   static_select?: {
     label: string;
-    options: { text: string; value: string }[];
+    options: { text: { type: "plain_text", text: string, emoji: boolean }, value: string }[];
   };
   button_action?: {
     text: string;
     value: string;
+  };
+  rich_text?: {
+    text: string;
   };
 }
 
@@ -91,6 +94,21 @@ export const inputTypeToBlock: InputTypeToBlock = {
         action_id: "plain_text_input-action",
       },
     }),
+    rich_text: (params) => ({
+      type: "rich_text",
+      block_id: "rich_text",
+      elements: [
+        {
+          type: "rich_text_quote",
+          elements: [
+            {
+              type: "text",
+              text: params?.text || " ",
+            },
+          ],
+        },
+      ],
+    }),
     static_select: (params) => ({
       type: "input",
       block_id: "static_select",
@@ -104,7 +122,7 @@ export const inputTypeToBlock: InputTypeToBlock = {
         action_id: "static_select-action",
         placeholder: {
           type: "plain_text",
-          text: "Select an item",
+          text: params?.label || "Select an item",
           emoji: true,
         },
         options: params?.options || [],

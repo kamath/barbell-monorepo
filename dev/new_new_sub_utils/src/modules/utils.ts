@@ -1,21 +1,17 @@
 import { WebClient } from '@slack/web-api';
 import { inputTypeToBlock, InputType, InputParameters } from '../types/blocks';
 import { Logger } from '../utils/logger'; 
+import { BlockAction } from '@slack/bolt';
 import { bot as app, Action, BlockActionHandler} from '../app';
 
-const slackClient = new WebClient(process.env.SLACK_BOT_SECRET);
+const slackClient = new WebClient(process.env.SLACK_TOKEN);
 
 
 export async function sendInputBlock<T extends InputType>(channel: string, thread_ts: string, inputType: T, params: InputParameters[T]) {
-    console.log(channel, "this is the channel")
-    console.log(thread_ts, "this is the thread_ts")
-    console.log(inputType, "this is the inputType")
-    console.log(params, "this is the params")
     if (!params) {
         Logger.error(`No parameters provided for inputType: ${inputType} with channel: ${channel} and thread_ts: ${thread_ts}`);
         return;
     }
-    
     try {
         const block = inputTypeToBlock[inputType](params);
         if (!block) {
@@ -31,12 +27,7 @@ export async function sendInputBlock<T extends InputType>(channel: string, threa
         });
         const userInput = await awaitUserInput(channel, thread_ts);
         return userInput;
-      
-
-        Logger.info(`Message sent successfully to channel ${channel} with response: ${JSON.stringify(response)}`);
-
-        // Await user input here
-        
+              
     } catch (error) {
         Logger.error(`Failed to send message for inputType: ${inputType} with error: ${error} and channel ${channel} and thread_ts ${thread_ts}`);
     }
@@ -44,11 +35,12 @@ export async function sendInputBlock<T extends InputType>(channel: string, threa
 
 async function awaitUserInput(channel: string, thread_ts: string): Promise<any> {
     return new Promise((resolve) => {
-      app.addActionListener("action_id: /.*/", async (payload: any) => {
-        console.log("payloadz: ", payload);
-        resolve(payload);
+      app.action({ action_id: /.*/ }, async ({ action, ack, body, }) => {
+        console.log("awaiting: ", body)
+        //ack();
+        if (body.channel?.id === channel && body.message?.thread_ts === thread_ts) {
+          resolve(action);
+        }
       });
     });
-  }
-
-
+}
