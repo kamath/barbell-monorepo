@@ -1,10 +1,6 @@
 import { WebClient, LogLevel, Block, KnownBlock, ChatPostMessageArguments, ViewsPublishArguments, ModalView } from "@slack/web-api";
 import { open_garage_and_gate_blocks, open_garage_blocks, open_gate_blocks } from "./openGarage";
-
-const SLACK_VERIFICATION_TOKEN = process.env.SLACK_VERIFICATION_TOKEN || "";
-const SEND_WEBHOOK_URL = process.env.SEND_WEBHOOK_URL || "";
-const SLACK_OAUTH_TOKEN = process.env.SLACK_OAUTH_TOKEN || "";
-const ANIRUDH_SLACK_ID = process.env.ANIRUDH_SLACK_ID || "";
+import { SLACK_VERIFICATION_TOKEN, SEND_WEBHOOK_URL, SLACK_OAUTH_TOKEN, ANIRUDH_SLACK_ID } from "../consts";
 
 export type SlackChallengeEventBody = {
 	type: string;

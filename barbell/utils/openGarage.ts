@@ -1,9 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { readChannelMembers, sendMessage } from "./slack";
-
-const ALERT_CHANNEL_ID = process.env.ALERT_CHANNEL_ID || ""
-const PARKING_CHANNEL_ID = process.env.PARKING_CHANNEL_ID || ""
-const JACOB_SLACK_ID = process.env.JACOB_SLACK_ID || "";
+import { ALERT_CHANNEL_ID, PARKING_CHANNEL_ID, JACOB_SLACK_ID, ENVIRONMENT } from "../consts";
 
 export const open_garage_and_gate_blocks = () => {
 	return [
@@ -166,6 +163,7 @@ export async function openGarage(prisma: PrismaClient, userId: string) {
 	await prisma.garageLastOpened.create({
 		data: {
 			userId: userId,
+			environmentId: ENVIRONMENT
 		}
 	});
 	try {
