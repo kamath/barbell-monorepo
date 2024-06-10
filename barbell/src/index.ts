@@ -4,9 +4,10 @@ import { askForHelp, openGarage, openGate, open_garage_and_gate_blocks, open_gar
 import { PrismaClient } from "@prisma/client";
 import { publishTestHomeTab } from "../utils/homeTab";
 import { Block } from "@slack/web-api";
+import { ENVIRONMENT, SLACK_VERIFICATION_TOKEN } from "../consts";
 
 const prisma = new PrismaClient();
-const environment = process.env.ENVIRONMENT || "NO_ENVIRONMENT_SPECIFIED";
+const environment = ENVIRONMENT;
 
 const app = new Elysia()
 app.get("/", () => `Barbell is running in ${environment}`)
@@ -17,11 +18,12 @@ app.post("/slack/events", async ({ body }: { body: SlackEventBody }) => {
 	await prisma.endpointHit.create({
 		data: {
 			endpoint: "slack/events",
-			body: JSON.stringify(body)
+			body: JSON.stringify(body),
+			environmentId: environment
 		}
 	})
 	if (!verifyToken(body.token)) {
-		console.log("Expected token", process.env.SLACK_VERIFICATION_TOKEN, "but got", body.token)
+		console.log("Expected token", SLACK_VERIFICATION_TOKEN, "but got", body.token)
 		return { status: 403, token: body.token };
 	}
 	if ('challenge' in body) {
@@ -50,7 +52,8 @@ app.post("/interactivity", async ({ body }: { body: { payload: string } }) => {
 	await prisma.endpointHit.create({
 		data: {
 			endpoint: "interactivity",
-			body: JSON.stringify(data)
+			body: JSON.stringify(data),
+			environmentId: environment
 		}
 	})
 
