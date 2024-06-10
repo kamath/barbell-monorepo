@@ -1,7 +1,9 @@
 import { Elysia, t } from "elysia";
-import { SlackEventBody, SlackIntent, SlackIntentToBlocks, SlackMentionEventBody, generateBlocksFromIntent, guessIntent, sendMessage, verifyToken } from "../utils/slack";
+import { SlackEventBody, SlackIntent, SlackIntentToBlocks, SlackMentionEventBody, generateBlocksFromIntent, guessIntent, openModal, publishHomeTab, sendMessage, verifyToken } from "../utils/slack";
 import { askForHelp, openGarage, openGate, open_garage_and_gate_blocks, open_garage_blocks, open_gate_blocks } from "../utils/openGarage";
 import { PrismaClient } from "@prisma/client";
+import { publishTestHomeTab } from "../utils/homeTab";
+import { Block } from "@slack/web-api";
 
 const prisma = new PrismaClient();
 const environment = process.env.ENVIRONMENT || "NO_ENVIRONMENT_SPECIFIED";
@@ -29,6 +31,11 @@ app.post("/slack/events", async ({ body }: { body: SlackEventBody }) => {
 	if ('bot_id' in body.event || (body.event.message && 'bot_id' in body.event.message)) {
 		return { status: 200 };
 	}
+	if (body.event.type === "app_home_opened") {
+		console.log("App home opened", body.event.user);
+		await publishHomeTab(body.event.user, publishTestHomeTab);
+		return { status: 200 };
+	}
 	let event: SlackMentionEventBody = body;
 	const intent = await guessIntent(event);
 	const blocks = await generateBlocksFromIntent(intent);
@@ -46,29 +53,40 @@ app.post("/interactivity", async ({ body }: { body: { payload: string } }) => {
 			body: JSON.stringify(data)
 		}
 	})
-	if (data.actions[0].action_id === "click__open_mission_st_garage") {
-		const blocks = await openGarage(prisma, data.user.id);
-		await sendMessage(blocks, data.channel.id, data.message.ts);
-	}
-	else if (data.actions[0].action_id === "click__open_otis_gate") {
-		const blocks = await openGate(prisma, data.user.id);
-		await sendMessage(blocks, data.channel.id, data.message.ts);
-	}
-	else if (data.actions[0].action_id === "click__ask_for_help") {
-		console.log("Sending message to", data.channel.id, data.message.ts);
-		const helpBlocks = await askForHelp(data.user.id);
-		await sendMessage(helpBlocks, data.channel.id, data.message.ts);
-	}
-	else if (data.actions[0].action_id === "intent_select") {
-		console.log("Sending message to", data.channel.id, data.message.ts);
+
+	let blocks: Block[] = [];
+	if (data.actions[0].action_id === "intent_select") {
 		const intent = data.actions[0].selected_option.value as SlackIntent;
 		const intentValue = SlackIntent[intent as unknown as keyof typeof SlackIntent];
-		console.log("Intent", intent, intentValue)
-		console.log("Slack intent to blocks", SlackIntentToBlocks)
-		const blocks = SlackIntentToBlocks[intentValue]();
-		console.log("Blocks", blocks)
-		await sendMessage(blocks, data.channel.id, data.message.ts);
+		blocks = SlackIntentToBlocks[intentValue]();
 	}
+	else if (data.actions[0].action_id === "click__open_mission_st_garage") {
+		blocks = await openGarage(prisma, data.user.id);
+	}
+	else if (data.actions[0].action_id === "click__open_otis_gate") {
+		blocks = await openGate(prisma, data.user.id);
+	}
+	else if (data.actions[0].action_id === "click__ask_for_help") {
+		blocks = await askForHelp(data.user.id);
+	}
+
+	console.log("GOT BLOCKS", blocks.length)
+
+	if (data.view.type === "home") {
+		console.log("Home view", data.view);
+		if ('trigger_id' in data) await openModal(data.trigger_id, {
+			"type": "modal",
+			"callback_id": "modal-identifier",
+			"title": {
+				"type": "plain_text",
+				"text": "Barbell cURL"
+			},
+			"blocks": blocks
+		})
+		await publishHomeTab(data.user.id, publishTestHomeTab);
+	}
+	else await sendMessage(blocks, data.channel.id, data.message.ts);
+
 	return { status: 200 };
 });
 
