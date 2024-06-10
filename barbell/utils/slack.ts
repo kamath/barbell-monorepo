@@ -1,7 +1,5 @@
 import { WebClient, LogLevel, Block, KnownBlock, ChatPostMessageArguments, ViewsPublishArguments, ModalView } from "@slack/web-api";
 import { open_garage_and_gate_blocks, open_garage_blocks, open_gate_blocks } from "./openGarage";
-import { replyToThread } from "./conversationThread";
-import { publishTestHomeTab } from "./homeTab";
 
 const SLACK_VERIFICATION_TOKEN = process.env.SLACK_VERIFICATION_TOKEN || "";
 const SEND_WEBHOOK_URL = process.env.SEND_WEBHOOK_URL || "";
@@ -101,7 +99,6 @@ export enum SlackIntent {
 	SELECT__BOTH = "Select both gates",
 	SELECT__MISSION_ST = "Select Mission Gate",
 	SELECT__OTIS_GATE = "Select Otis Gate",
-	REPLY_TO_THREAD = "Reply to thread",
 	DEFAULT = "Default"
 }
 
@@ -109,7 +106,6 @@ export const SlackIntentToBlocks: Record<SlackIntent, () => (Block | KnownBlock)
 	[SlackIntent.SELECT__BOTH]: open_garage_and_gate_blocks,
 	[SlackIntent.SELECT__MISSION_ST]: open_garage_blocks,
 	[SlackIntent.SELECT__OTIS_GATE]: open_gate_blocks,
-	[SlackIntent.REPLY_TO_THREAD]: replyToThread,
 	[SlackIntent.DEFAULT]: default_blocks
 }
 
@@ -127,9 +123,6 @@ export const guessIntent = async (event: SlackMentionEventBody) => {
 	}
 	else if (event.event.text.toLowerCase().includes('gate')) {
 		intent = SlackIntent.SELECT__OTIS_GATE;
-	}
-	else if (event.event.text.toLowerCase().includes('reply')) {
-		intent = SlackIntent.REPLY_TO_THREAD;
 	}
 	else {
 		intent = SlackIntent.DEFAULT;
