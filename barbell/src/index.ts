@@ -5,12 +5,13 @@ import { PrismaClient } from "@prisma/client";
 import { publishTestHomeTab } from "../utils/homeTab";
 import { Block } from "@slack/web-api";
 import { ENVIRONMENT, SLACK_VERIFICATION_TOKEN } from "../consts";
+import { getSecret } from "../utils/aws";
 
 const prisma = new PrismaClient();
 const environment = ENVIRONMENT;
 
 const app = new Elysia()
-app.get("/", () => `Barbell is running in ${environment}`)
+app.get("/", async () => `Barbell is running in ${environment} with pingpong ${await getSecret("pingpong")}`)
 
 
 app.post("/slack/events", async ({ body }: { body: SlackEventBody }) => {
