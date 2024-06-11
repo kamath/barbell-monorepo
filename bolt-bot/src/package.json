@@ -1,15 +1,17 @@
 {
-  "name": "src",
-  "module": "index.ts",
-  "type": "module",
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  },
-  "dependencies": {
-    "@slack/bolt": "^3.18.0",
-    "dotenv": "^16.4.5"
-  }
+	"name": "src",
+	"module": "index.ts",
+	"type": "module",
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5.0.0"
+	},
+	"dependencies": {
+		"@aws-sdk/client-secrets-manager": "^3.592.0",
+		"@slack/bolt": "^3.18.0",
+		"@slack/web-api": "^7.0.4",
+		"dotenv": "^16.4.5"
+	}
 }
