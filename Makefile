@@ -1,9 +1,10 @@
 include .env
 
 DEFAULT_AWS_REGION=us-east-1
-BACKEND_AWS_ECR_REPO=main-backend-ecr-repo
-ECS_CLUSTER=main-backend-ecs-cluster
-ECS_SERVICE=main-backend-service
+PROJECT=bolt
+BACKEND_AWS_ECR_REPO=${PROJECT}-backend-ecr-repo
+ECS_CLUSTER=${PROJECT}-backend-ecs-cluster
+ECS_SERVICE=${PROJECT}-backend-service
 
 init:
 	cd iac && terraform init
