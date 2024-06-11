@@ -1,6 +1,6 @@
 import { WebClient, LogLevel, Block, KnownBlock, ChatPostMessageArguments, ViewsPublishArguments, ModalView } from "@slack/web-api";
 import { open_garage_and_gate_blocks, open_garage_blocks, open_gate_blocks } from "./openGarage";
-import { SLACK_VERIFICATION_TOKEN, SEND_WEBHOOK_URL, SLACK_OAUTH_TOKEN, ANIRUDH_SLACK_ID } from "../consts";
+import { SLACK_VERIFICATION_TOKEN, SLACK_OAUTH_TOKEN, ANIRUDH_SLACK_ID } from "../consts";
 
 export type SlackChallengeEventBody = {
 	type: string;

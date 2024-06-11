@@ -4,14 +4,14 @@ import { askForHelp, openGarage, openGate, open_garage_and_gate_blocks, open_gar
 import { PrismaClient } from "@prisma/client";
 import { publishTestHomeTab } from "../utils/homeTab";
 import { Block } from "@slack/web-api";
-import { ENVIRONMENT, SLACK_VERIFICATION_TOKEN } from "../consts";
+import { AWS_REGION, ENVIRONMENT, SLACK_VERIFICATION_TOKEN } from "../consts";
 import { getSecret } from "../utils/aws";
 
 const prisma = new PrismaClient();
 const environment = ENVIRONMENT;
 
 const app = new Elysia()
-app.get("/", async () => `Barbell is running in ${environment} with pingpong ${await getSecret("pingpong")}`)
+app.get("/", async () => `Barbell is running in ${environment} with pingpong ${await getSecret("pingpong", AWS_REGION)}`)
 
 
 app.post("/slack/events", async ({ body }: { body: SlackEventBody }) => {

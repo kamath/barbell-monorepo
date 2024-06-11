@@ -8,7 +8,7 @@ import {
 } from "@aws-sdk/client-secrets-manager";
 import { AWS_REGION } from "../consts";
 
-export async function getSecret(secretName: string): Promise<string | undefined> {
+export async function getSecret(secretName: string, environment: string): Promise<string | undefined> {
 	const client = new SecretsManagerClient({
 		region: AWS_REGION,
 	});
@@ -18,7 +18,7 @@ export async function getSecret(secretName: string): Promise<string | undefined>
 	try {
 		response = await client.send(
 			new GetSecretValueCommand({
-				SecretId: secretName,
+				SecretId: `${secretName}_${environment}`,
 				VersionStage: "AWSCURRENT", // VersionStage defaults to AWSCURRENT if unspecified
 			})
 		);
