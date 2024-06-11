@@ -1,7 +1,7 @@
 // src/sdk.ts
 
-import { App, ExpressReceiver, BlockAction, SlackActionMiddlewareArgs } from '@slack/bolt';
-
+import { App, ExpressReceiver, BlockAction, SlackActionMiddlewareArgs, ActionConstraints, BlockElementAction, Middleware,  } from '@slack/bolt';
+import { StringIndexed } from '@slack/bolt/dist/types/helpers';
 interface ActionOptions {
   name: string;
   handler: (payload: any) => Promise<void>;
@@ -59,7 +59,7 @@ class SlackBot {
       const action = this.actions.find(a => a.name.toLowerCase() === text.toLowerCase());
       console.log(action)
       if (action) {
-        await say('Message Received');
+        //await say('Message Received');
         await action.execute(message);
       }
     });
@@ -69,7 +69,7 @@ class SlackBot {
       const blockAction = this.blockActions.find(a => a.actionId === action.action_id);
       console.log(blockAction)
       if (blockAction) {
-        await say('Block Action Received');
+        //await say('Block Action Received');
         await blockAction.execute(action);
       }
     });
@@ -78,6 +78,11 @@ class SlackBot {
       console.log('⚡️ Slack bot is running!');
     });
   }
+
+  public action(actionConstraints: ActionConstraints<BlockAction<BlockElementAction>>, handler: Middleware<SlackActionMiddlewareArgs<BlockAction<BlockElementAction>>, StringIndexed>) {
+    this.app.action(actionConstraints, handler);
+  }
+
 
   public defineAction(options: ActionOptions) {
     this.actions.push(new Action(options));
@@ -105,6 +110,7 @@ class SlackBot {
 
   private async sendBlockAction(channel: string, thread_ts: string, action: BlockActionOptions) {
     try { 
+
         const response = await this.app.client.chat.postMessage({
             channel,
             thread_ts,
@@ -116,7 +122,7 @@ class SlackBot {
         })
         return response;
     } catch (error) {
-        console.error("Error: ", error);
+        console.error("Errorz: ", error);
         return null;
     }
   }

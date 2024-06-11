@@ -1,6 +1,6 @@
 // src/modules/users.ts
 
-export async function createUser({ email }: { email: string }) {
+export async function createUser({ email }: { email: String }) {
     // Implementation for creating a user
     return { id: '123', email };
   }
