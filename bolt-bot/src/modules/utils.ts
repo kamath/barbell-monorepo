@@ -2,7 +2,7 @@ import { WebClient } from '@slack/web-api';
 import { inputTypeToBlock, InputType, InputParameters } from '../types/blocks';
 import { Logger } from '../utils/logger';
 import { BlockAction } from '@slack/bolt';
-import { bot as app, Action, BlockActionHandler, slackClient } from '../app';
+import { bot as app, BlockActionHandler, slackClient } from '../app';
 
 
 export async function sendInputBlock<T extends InputType>(channel: string, thread_ts: string, inputType: T, params: InputParameters[T]) {
@@ -24,8 +24,14 @@ export async function sendInputBlock<T extends InputType>(channel: string, threa
 			blocks: [block],
 		});
 		const userInput = await awaitUserInput(channel, thread_ts);
-		return userInput;
-
+		switch (inputType) {
+			case "static_select":
+				return userInput.selected_option.value;
+			case "date":
+				return userInput.selected_date;
+			default:
+				return userInput.text;
+		}
 	} catch (error) {
 		Logger.error(`Failed to send message for inputType: ${inputType} with error: ${error} and channel ${channel} and thread_ts ${thread_ts}`);
 	}
@@ -33,7 +39,7 @@ export async function sendInputBlock<T extends InputType>(channel: string, threa
 
 async function awaitUserInput(channel: string, thread_ts: string): Promise<any> {
 	return new Promise((resolve) => {
-		app.action({ action_id: /.*/ }, async ({ action, ack, body, }) => {
+		app.action({ action_id: /.*/ }, async ({ action, ack, body }: { action: any, ack: any, body: any }) => {
 			console.log("awaiting: ", body)
 			//ack();
 			if (body.channel?.id === channel && body.message?.thread_ts === thread_ts) {
