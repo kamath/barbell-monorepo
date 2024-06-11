@@ -15,3 +15,11 @@ export const openModal = async (trigger_id: string, modalBlocks: ModalView) => {
 export const updateModal = async (viewId: string, modalBlocks: ModalView) => {
 	await client.views.update({ view_id: viewId, view: modalBlocks });
 }
+
+// TODO: This is a hack, but it works for now
+export const getActionValue = (action: any): string => {
+	if (action.type === "static_select") {
+		return action.selected_option.value
+	}
+	throw new Error(`Unsupported action type: ${action.type}`)
+}

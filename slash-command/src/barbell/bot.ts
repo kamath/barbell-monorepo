@@ -1,3 +1,5 @@
+import { Block } from "@slack/web-api"
+
 class Input {
 	private value: string | number | boolean | undefined
 	constructor(private readonly name: string) { }
@@ -25,7 +27,7 @@ class DateInput extends Input {
 }
 
 abstract class Output {
-	abstract render(): string
+	abstract render(): Block[]
 }
 
 class MarkdownOutput extends Output {
@@ -33,7 +35,18 @@ class MarkdownOutput extends Output {
 		super()
 	}
 	render() {
-		return this.value
+		return [
+			{
+				"type": "context",
+				"elements": [
+					{
+						"type": "plain_text",
+						"text": this.value,
+						"emoji": true
+					}
+				]
+			}
+		]
 	}
 }
 
@@ -56,8 +69,8 @@ export class Action {
 			value: string
 		}[]
 	}[] = []
-	private readonly name: string
-	private readonly handler: () => Promise<Output>
+	readonly name: string
+	readonly handler: () => Promise<Output>
 
 	constructor({ name, handler }: { name: string, handler: () => Promise<Output> }) {
 		this.name = name
@@ -66,12 +79,18 @@ export class Action {
 }
 
 export default class Bot {
-	private actions: Action[] = []
+	private actions: Record<string, Action> = {}
 	constructor() { }
 	defineAction(action: Action) {
-		this.actions.push(action)
+		if (this.actions[action.name]) {
+			throw new Error(`Duplicate action ${action.name}`)
+		}
+		this.actions[action.name] = action
 	}
 	getActions() {
 		return this.actions
+	}
+	getAction(name: string) {
+		return this.actions[name]
 	}
 }

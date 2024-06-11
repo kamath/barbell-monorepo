@@ -1,7 +1,8 @@
 import { Elysia } from "elysia";
 import { ShortcutPayload } from "./types/slashCommandPayload";
-import { openModal, updateModal } from "./utils/slack";
+import { getActionValue, openModal, updateModal } from "./utils/slack";
 import { BlockActionsPayload } from "./types/slackEvent";
+import bot from "./actions";
 
 const app = new Elysia()
 app.get("/", () => "Hello Elysia")
@@ -19,33 +20,37 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 				type: "modal",
 				title: {
 					type: "plain_text",
-					text: "Hello World"
+					text: "Barbell cURL"
+				},
+				submit: {
+					type: "plain_text",
+					text: "Submit"
 				},
 				blocks: [
 					{
-						"dispatch_action": true,
-						"type": "input",
-						"element": {
-							"type": "plain_text_input",
-							"action_id": "plain_text_input-action"
+						"type": "section",
+						"text": {
+							"type": "mrkdwn",
+							"text": "Pick an item from the dropdown list"
 						},
-						"label": {
-							"type": "plain_text",
-							"text": "Label",
-							"emoji": true
-						}
-					},
-					{
-						"dispatch_action": true,
-						"type": "input",
-						"element": {
-							"type": "plain_text_input",
-							"action_id": "plain_text_input-action"
-						},
-						"label": {
-							"type": "plain_text",
-							"text": "Label",
-							"emoji": true
+						"accessory": {
+							"type": "static_select",
+							"placeholder": {
+								"type": "plain_text",
+								"text": "Select an item",
+								"emoji": true
+							},
+							"options": Object.values(bot.getActions()).map(action => {
+								return {
+									"text": {
+										"type": "plain_text",
+										"text": action.name,
+										"emoji": true
+									},
+									"value": action.name
+								}
+							}),
+							"action_id": "static_select-action"
 						}
 					}
 				]
@@ -54,26 +59,16 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 		else if (payload.type === "block_actions") {
 			const blockActionsPayload = payload as BlockActionsPayload
 			console.log("Block Actions Payload", blockActionsPayload)
+			const intendedAction = getActionValue(blockActionsPayload.actions[0])
+			const action = bot.getAction(intendedAction)
 			await updateModal(blockActionsPayload.view.id, {
 				type: "modal",
 				title: {
 					type: "plain_text",
-					text: "Hello World"
+					text: action.name
 				},
 				blocks: [
-					{
-						"dispatch_action": true,
-						"type": "input",
-						"element": {
-							"type": "plain_text_input",
-							"action_id": "plain_text_input-action"
-						},
-						"label": {
-							"type": "plain_text",
-							"text": "ahhh you pooped your pants!",
-							"emoji": true
-						}
-					}
+					...(await action.handler()).render()
 				]
 			})
 			return
