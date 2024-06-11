@@ -2,6 +2,8 @@ include .env
 
 DEFAULT_AWS_REGION=us-east-1
 PROJECT=bolt
+DOCKERFILE_PATH=bolt-bot/src
+
 BACKEND_AWS_ECR_REPO=${PROJECT}-backend-ecr-repo
 ECS_CLUSTER=${PROJECT}-backend-ecs-cluster
 ECS_SERVICE=${PROJECT}-backend-service
@@ -23,7 +25,7 @@ run-ngrok:
 	ngrok http --domain=${NGROK_URL} 3000
 
 build:
-	cd barbell && docker build -t ${BACKEND_AWS_ECR_REPO} . --platform=linux/amd64
+	cd ${DOCKERFILE_PATH} && docker build -t ${BACKEND_AWS_ECR_REPO} . --platform=linux/amd64
 
 deploy-ecr: build
 	aws ecr get-login-password --region ${DEFAULT_AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${DEFAULT_AWS_REGION}.amazonaws.com
