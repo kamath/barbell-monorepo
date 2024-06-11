@@ -112,7 +112,7 @@ resource "aws_ecs_task_definition" "bolt-backend-ecs-task" {
   task_role_arn            = aws_iam_role.ecsTaskExecutionRole.arn
 }
 
-output "ecs_task_definition_json" {
+output "bolt_backend_ecs_task_definition_json" {
   value = jsonencode({
     family                  = aws_ecs_task_definition.bolt-backend-ecs-task.family,
     containerDefinitions    = jsondecode(aws_ecs_task_definition.bolt-backend-ecs-task.container_definitions),
