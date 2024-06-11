@@ -16,7 +16,7 @@ export namespace io {
         static async user_select(prompt: string, channel: string, thread_ts: string): Promise<string> {
             return await sendInputBlock(channel, thread_ts, "user_select", { placeholder: prompt });
         }
-        static async static_select(prompt: string, channel: string, thread_ts: string, options: { text: { type: "plain_text", text: string, emoji: boolean }, value: string }[]): Promise<string> {
+        static async static_select(prompt: string, channel: string, thread_ts: string, options: { text: string, value: string }[]): Promise<string> {
             return await sendInputBlock(channel, thread_ts, "static_select", { label: prompt, options: options });
         }
         static async rich_text(prompt: string, channel: string, thread_ts: string, text: string ): Promise<string> {

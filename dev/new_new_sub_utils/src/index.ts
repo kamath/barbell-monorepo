@@ -14,26 +14,28 @@ bot.defineAction({
     const channel = payload.channel;
     const thread_ts = payload.ts;
     let lookbackperiod: LookbackPeriod;
+    const plaintextInput = await io.Input.email("Please enter a plaintext input:", channel, thread_ts);
+    console.log("plaintextInput: ", plaintextInput);
 
     const selectedOptions = await io.Input.static_select("Please select a lookback period:", channel, thread_ts, [
-      { text: { type: "plain_text", text: "1 day", emoji: true }, value: "1" },
-      { text: { type: "plain_text", text: "7 days ", emoji: true }, value: "7" },
-      { text: { type: "plain_text", text: "30 days", emoji: false }, value: "30" },
-      { text: { type: "plain_text", text: "90 days", emoji: false }, value: "90" },
-      { text: { type: "plain_text", text: "custom ", emoji: false }, value: "custom" },
+      { text: "1 day", value: "1" },
+      { text: "7 days", value: "7" },
+      { text: "30 days", value: "30" },
+      { text: "90 days", value: "90" },
+      { text: "custom", value: "custom" },
     ]);
 
-    switch (selectedOptions.selected_option.value) {
+    switch (selectedOptions) {
       case "custom":
         const custom_date = await io.Input.date("2024-06-09", channel, thread_ts);
         lookbackperiod = {
-          days: Math.floor((new Date().getTime() - new Date(custom_date.selected_date).getTime()) / (1000 * 60 * 60 * 24)),
-          lookback_date: new Date(custom_date.selected_date),
+          days: Math.floor((new Date().getTime() - new Date(custom_date).getTime()) / (1000 * 60 * 60 * 24)),
+          lookback_date: new Date(custom_date),
         };
         break;
       default:
         lookbackperiod = {
-          days: parseInt(selectedOptions.selected_option.value, 10),
+          days: parseInt(selectedOptions, 10),
           lookback_date: new Date(new Date().setDate(new Date().getDate() - parseInt(selectedOptions, 10))),
         };
         break;
@@ -44,36 +46,4 @@ bot.defineAction({
 
 
 
-// TBD ( To be deprecated)
-bot.defineBlockAction({
-  actionId: "email_text_input-action",
-  handler: async (payload: any) => {
-    console.log("payload: ", payload);
-    return payload.value;
-  },
-});
 
-bot.defineBlockAction({
-  actionId: "datepicker-action",
-  handler: async (payload: any) => {
-    console.log("payload: ", payload);
-    return payload.value;
-  },
-});
-
-bot.defineBlockAction({
-  actionId: "static_select-action",
-  handler: async (payload: any) => {
-    console.log("payload: ", payload);
-    return payload.value;
-  },
-});
-
-// define for rich_text
-bot.defineBlockAction({
-  actionId: "rich_text",
-  handler: async (payload: any) => {
-    console.log("payload: ", payload);
-    return payload.value;
-  },
-});
