@@ -13,5 +13,8 @@
 		"@slack/bolt": "^3.18.0",
 		"@slack/web-api": "^7.0.4",
 		"dotenv": "^16.4.5"
+	},
+	"scripts": {
+		"start": "bun run index.ts"
 	}
 }
