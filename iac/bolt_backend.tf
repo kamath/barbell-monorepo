@@ -30,11 +30,6 @@ resource "aws_lb_target_group" "bolt-backend-target_group" {
   protocol    = "HTTP"
   target_type = "ip"
   vpc_id      = aws_vpc.main_backend_vpc.id # Referencing the VPC
-  health_check {
-    matcher = "200,301,302"
-    path    = "/"
-    port    = 3000
-  }
 }
 
 # Creating a listener for the load balancer
