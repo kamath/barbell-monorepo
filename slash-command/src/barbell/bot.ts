@@ -1,5 +1,6 @@
 import { Block } from "@slack/web-api"
 import { BarbellIOError } from "../types/ioError"
+import { INIT_MODAL_NAME } from "../consts"
 
 abstract class InputOutput {
 	constructor(readonly name: string) { }
@@ -7,29 +8,34 @@ abstract class InputOutput {
 }
 
 abstract class Input extends InputOutput {
-	protected value: string | number | boolean | undefined
-	constructor(readonly name: string) {
+	public value: string | number | boolean | undefined
+	constructor(readonly name: string, value?: string | number | boolean | undefined) {
 		super(name)
+		this.value = value
 	}
 	setValue(value: string | number | boolean) {
 		this.value = value
 	}
-	getValue() {
+	ensureValue() {
 		if (!this.value) {
 			throw new BarbellIOError(`Value for ${this.name} is not set`)
 		}
-		return this.value
 	}
+	abstract getValue(): string | number | boolean
 	abstract render(): Block[]
 }
 
 class TextInput extends Input {
-	constructor(name: string) {
-		super(name)
+	constructor(name: string, value?: string | undefined) {
+		super(name, value)
+		if (value !== undefined && typeof value !== 'string') {
+			throw new TypeError(`Value for ${name} must be a string`);
+		}
 	}
 	render() {
 		return [
 			{
+				"dispatch_action": true,
 				"type": "input",
 				"element": {
 					"type": "plain_text_input",
@@ -40,14 +46,18 @@ class TextInput extends Input {
 					"text": this.name,
 					"emoji": true
 				}
-			},
+			}
 		]
+	}
+	getValue() {
+		this.ensureValue()
+		return this.value as string
 	}
 }
 
 class DateInput extends Input {
-	constructor(name: string) {
-		super(name)
+	constructor(name: string, value?: string | undefined) {
+		super(name, value)
 	}
 	render() {
 		return [
@@ -66,6 +76,10 @@ class DateInput extends Input {
 				]
 			}
 		]
+	}
+	getValue() {
+		this.ensureValue()
+		return this.value as string
 	}
 }
 
@@ -108,40 +122,45 @@ const io = {
 
 type IO = {
 	input: {
-		text: (name: string) => Promise<TextInput>
-		date: (name: string) => Promise<DateInput>
+		text: (name: string) => Promise<string>
+		date: (name: string) => Promise<string>
 	}
 	output: {
 		markdown: (value: string) => Promise<MarkdownOutput>
 	}
 }
 
-export class Action {
+class ActionRunner {
 	readonly io: IO
 	private inputoutputs: InputOutput[] = []
 	readonly name: string
 	readonly handler: (io: IO) => Promise<void>
 
 	constructor({ name, handler }: { name: string, handler: (io: IO) => Promise<void> }) {
+		if (name === INIT_MODAL_NAME) {
+			throw new Error("Action name cannot be the same as the initial modal name")
+		}
 		this.name = name
 		this.io = {
 			input: {
-				text: async (name: string): Promise<TextInput> => {
+				text: async (name: string): Promise<string> => {
 					console.log("ADDING TEXT INPUT", name)
 					if (this.inputoutputs.find(inputoutput => inputoutput.name === name)) {
-						return this.inputoutputs.find(inputoutput => inputoutput.name === name) as TextInput
+						const input = this.inputoutputs.find(inputoutput => inputoutput.name === name) as TextInput
+						return await input.getValue()
 					}
 					const input = new TextInput(name)
 					this.inputoutputs.push(input)
-					return input
+					throw new BarbellIOError(`Input ${name} is not set`)
 				},
-				date: async (name: string): Promise<DateInput> => {
+				date: async (name: string): Promise<string> => {
 					if (this.inputoutputs.find(inputoutput => inputoutput.name === name)) {
-						return this.inputoutputs.find(inputoutput => inputoutput.name === name) as DateInput
+						const input = this.inputoutputs.find(inputoutput => inputoutput.name === name) as DateInput
+						return input.getValue()
 					}
 					const input = new DateInput(name)
 					this.inputoutputs.push(input)
-					return input
+					throw new BarbellIOError(`Input ${name} is not set`)
 				}
 			},
 			output: {
@@ -163,13 +182,26 @@ export class Action {
 		await this.handler(this.io).catch(async e => {
 			if (e instanceof BarbellIOError) {
 				console.error("BarbellIOError:", e.message);
-				return await this.io.output.markdown(e.message)
 			} else {
 				console.error(e);
-				return await this.io.output.markdown(e.message)
+				throw e
 			}
 		})
 		return (await Promise.all(this.inputoutputs.map(inputoutput => inputoutput.render()))).flat()
+	}
+}
+
+export class Action {
+	readonly name: string
+	readonly handler: (io: IO) => Promise<void>
+
+	constructor({ name, handler }: { name: string, handler: (io: IO) => Promise<void> }) {
+		this.name = name
+		this.handler = handler
+	}
+	async run(inputs?: Record<string, string>) {
+		const actionRunner = new ActionRunner({ name: this.name, handler: this.handler })
+		return await actionRunner.run(inputs)
 	}
 }
 
@@ -177,7 +209,7 @@ export default class Bot {
 	private actions: Record<string, Action> = {}
 	constructor() { }
 	defineAction(action: Action) {
-		if (this.actions[action.name]) {
+		if (action.name in this.actions) {
 			throw new Error(`Duplicate action ${action.name}`)
 		}
 		this.actions[action.name] = action

@@ -3,6 +3,7 @@ import { ShortcutPayload } from "./types/slashCommandPayload";
 import { getActionValue, openModal, updateModal } from "./utils/slack";
 import { BlockActionsPayload } from "./types/slackEvent";
 import bot from "./actions";
+import { INIT_ACTION_ID, INIT_MODAL_NAME } from "./consts";
 
 const app = new Elysia()
 app.get("/", () => "Hello Elysia")
@@ -20,7 +21,7 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 				type: "modal",
 				title: {
 					type: "plain_text",
-					text: "Barbell cURL"
+					text: INIT_MODAL_NAME
 				},
 				submit: {
 					type: "plain_text",
@@ -50,7 +51,7 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 									"value": action.name
 								}
 							}),
-							"action_id": "static_select-action"
+							"action_id": INIT_ACTION_ID
 						}
 					}
 				]
@@ -59,23 +60,50 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 		else if (payload.type === "block_actions") {
 			const blockActionsPayload = payload as BlockActionsPayload
 			console.log("Block Actions Payload", blockActionsPayload)
-			const intendedAction = getActionValue(blockActionsPayload.actions[0])
-			const action = bot.getAction(intendedAction)
-			await updateModal(blockActionsPayload.view.id, {
-				type: "modal",
-				title: {
-					type: "plain_text",
-					text: action.name
-				},
-				submit: {
-					type: "plain_text",
-					text: "Submit"
-				},
-				blocks: [
-					...(await action.run())
-				]
-			})
-			return
+			const actionInput = blockActionsPayload.actions[0]
+			if (actionInput.action_id !== INIT_ACTION_ID) {
+				if (blockActionsPayload.view.state) {
+					const { state } = blockActionsPayload.view
+					const inputs = Array.from(Object.values(state.values))
+					const actionName = blockActionsPayload.view.title.text
+					console.log("GOT INPUTS", actionName, inputs)
+					const action = bot.getAction(actionName)
+					await updateModal(blockActionsPayload.view.id, {
+						type: "modal",
+						title: {
+							type: "plain_text",
+							text: action.name
+						},
+						submit: {
+							type: "plain_text",
+							text: "Submit"
+						},
+						blocks: [
+							...(await action.run())
+						]
+					})
+				}
+				return
+			}
+			else {
+				const intendedAction = getActionValue(actionInput)
+				const action = bot.getAction(intendedAction)
+				await updateModal(blockActionsPayload.view.id, {
+					type: "modal",
+					title: {
+						type: "plain_text",
+						text: action.name
+					},
+					submit: {
+						type: "plain_text",
+						text: "Submit"
+					},
+					blocks: [
+						...(await action.run())
+					]
+				})
+				return
+			}
 		}
 		else console.log("No payload tag", JSON.parse(body.payload))
 	}

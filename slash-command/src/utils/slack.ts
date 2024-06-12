@@ -21,5 +21,8 @@ export const getActionValue = (action: any): string => {
 	if (action.type === "static_select") {
 		return action.selected_option.value
 	}
+	if (action.type === "plain_text_input") {
+		return action.value
+	}
 	throw new Error(`Unsupported action type: ${action.type}`)
 }
