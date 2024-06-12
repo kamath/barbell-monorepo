@@ -72,7 +72,7 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 					text: "Submit"
 				},
 				blocks: [
-					...(await action.handler()).render()
+					...(await action.run())
 				]
 			})
 			return
