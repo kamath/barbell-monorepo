@@ -12,7 +12,8 @@ bot.defineAction(action)
 const inputAction = new Action({
 	name: "Input",
 	handler: async (io) => {
-		const name = io.input.text("Enter your name")
+		const name = await io.input.text("Enter your name")
+		const email = await io.input.text("Enter your email")
 		return io.output.markdown(`Hello, ${name}!`)
 	}
 })

@@ -98,8 +98,8 @@ const io = {
 
 type IO = {
 	input: {
-		text: (name: string) => TextInput
-		date: (name: string) => DateInput
+		text: (name: string) => Promise<TextInput>
+		date: (name: string) => Promise<DateInput>
 	}
 	output: {
 		markdown: (value: string) => MarkdownOutput
@@ -116,7 +116,7 @@ export class Action {
 		this.name = name
 		this.io = {
 			input: {
-				text: (name: string): TextInput => {
+				text: async (name: string): Promise<TextInput> => {
 					console.log("ADDING TEXT INPUT", name)
 					if (this.inputs.find(input => input.name === name)) {
 						return this.inputs.find(input => input.name === name) as TextInput
@@ -125,7 +125,7 @@ export class Action {
 					this.inputs.push(input)
 					return input
 				},
-				date: (name: string): DateInput => {
+				date: async (name: string): Promise<DateInput> => {
 					if (this.inputs.find(input => input.name === name)) {
 						return this.inputs.find(input => input.name === name) as DateInput
 					}
@@ -143,7 +143,8 @@ export class Action {
 
 	public async run(): Promise<Block[]> {
 		console.log("INPUTS", this.inputs)
-		return [...this.inputs.map(input => input.render()), ...(await this.handler(this.io)).render()].flat()
+		const blocks = await this.handler(this.io)
+		return [...(await Promise.all(this.inputs.map(input => input.render()))), ...(await blocks.render())].flat()
 	}
 }
 
