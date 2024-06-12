@@ -67,13 +67,17 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 					type: "plain_text",
 					text: action.name
 				},
+				submit: {
+					type: "plain_text",
+					text: "Submit"
+				},
 				blocks: [
 					...(await action.handler()).render()
 				]
 			})
 			return
 		}
-		else console.log("No payload tag", body)
+		else console.log("No payload tag", JSON.parse(body.payload))
 	}
 })
 app.listen(3000);
