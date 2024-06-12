@@ -1,9 +1,16 @@
 import { Block } from "@slack/web-api"
 import { BarbellIOError } from "../types/ioError"
 
-abstract class Input {
-	protected value: string | number | boolean | undefined
+abstract class InputOutput {
 	constructor(readonly name: string) { }
+	abstract render(): Block[]
+}
+
+abstract class Input extends InputOutput {
+	protected value: string | number | boolean | undefined
+	constructor(readonly name: string) {
+		super(name)
+	}
 	setValue(value: string | number | boolean) {
 		this.value = value
 	}
@@ -62,13 +69,16 @@ class DateInput extends Input {
 	}
 }
 
-abstract class Output {
+abstract class Output extends InputOutput {
+	constructor(name: string) {
+		super(name)
+	}
 	abstract render(): Block[]
 }
 
 class MarkdownOutput extends Output {
 	constructor(private readonly value: string) {
-		super()
+		super(value)
 	}
 	render() {
 		return [
@@ -102,49 +112,64 @@ type IO = {
 		date: (name: string) => Promise<DateInput>
 	}
 	output: {
-		markdown: (value: string) => MarkdownOutput
+		markdown: (value: string) => Promise<MarkdownOutput>
 	}
 }
 
 export class Action {
 	readonly io: IO
-	private inputs: Input[] = []
+	private inputoutputs: InputOutput[] = []
 	readonly name: string
-	readonly handler: (io: IO) => Promise<Output>
+	readonly handler: (io: IO) => Promise<void>
 
-	constructor({ name, handler }: { name: string, handler: (io: IO) => Promise<Output> }) {
+	constructor({ name, handler }: { name: string, handler: (io: IO) => Promise<void> }) {
 		this.name = name
 		this.io = {
 			input: {
 				text: async (name: string): Promise<TextInput> => {
 					console.log("ADDING TEXT INPUT", name)
-					if (this.inputs.find(input => input.name === name)) {
-						return this.inputs.find(input => input.name === name) as TextInput
+					if (this.inputoutputs.find(inputoutput => inputoutput.name === name)) {
+						return this.inputoutputs.find(inputoutput => inputoutput.name === name) as TextInput
 					}
 					const input = new TextInput(name)
-					this.inputs.push(input)
+					this.inputoutputs.push(input)
 					return input
 				},
 				date: async (name: string): Promise<DateInput> => {
-					if (this.inputs.find(input => input.name === name)) {
-						return this.inputs.find(input => input.name === name) as DateInput
+					if (this.inputoutputs.find(inputoutput => inputoutput.name === name)) {
+						return this.inputoutputs.find(inputoutput => inputoutput.name === name) as DateInput
 					}
 					const input = new DateInput(name)
-					this.inputs.push(input)
+					this.inputoutputs.push(input)
 					return input
 				}
 			},
 			output: {
-				markdown: (value: string) => new MarkdownOutput(value)
+				markdown: async (value: string): Promise<MarkdownOutput> => {
+					if (this.inputoutputs.find(inputoutput => inputoutput.name === value)) {
+						return this.inputoutputs.find(inputoutput => inputoutput.name === value) as MarkdownOutput
+					}
+					const output = new MarkdownOutput(value)
+					this.inputoutputs.push(output)
+					return output
+				}
 			}
 		}
 		this.handler = handler
 	}
 
 	public async run(): Promise<Block[]> {
-		console.log("INPUTS", this.inputs)
-		const blocks = await this.handler(this.io)
-		return [...(await Promise.all(this.inputs.map(input => input.render()))), ...(await blocks.render())].flat()
+		console.log("INPUTS", this.inputoutputs)
+		await this.handler(this.io).catch(async e => {
+			if (e instanceof BarbellIOError) {
+				console.error("BarbellIOError:", e.message);
+				return await this.io.output.markdown(e.message)
+			} else {
+				console.error(e);
+				return await this.io.output.markdown(e.message)
+			}
+		})
+		return (await Promise.all(this.inputoutputs.map(inputoutput => inputoutput.render()))).flat()
 	}
 }
 
