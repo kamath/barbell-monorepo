@@ -1,8 +1,8 @@
 include .env
 
 DEFAULT_AWS_REGION=us-east-1
-PROJECT=bolt
-DOCKERFILE_PATH=bolt-bot/src
+PROJECT=main
+DOCKERFILE_PATH=solaris-barbell
 
 BACKEND_AWS_ECR_REPO=${PROJECT}-backend-ecr-repo
 ECS_CLUSTER=${PROJECT}-backend-ecs-cluster
