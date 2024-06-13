@@ -66,7 +66,6 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 					const actionName = (blockActionsPayload.view.type === 'modal') ? blockActionsPayload.view.title.text : (blockActionsPayload.view.blocks[0] as HeaderBlock).text.text
 					console.log("GOT INPUTS", actionName, inputs)
 					const action = bot.getAction(actionName)
-					console.log("pls you stupid fuck", action)
 					if (action === undefined) throw new Error("Action not found")
 					// inputs is a list of {key: object} -> flatten this into one object
 					const flattenedInputs = inputs.reduce((acc, input) => {
