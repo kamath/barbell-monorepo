@@ -75,6 +75,11 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 						return acc;
 					}, {});
 					console.log("FLATTENED INPUTS", flattenedInputs);
+					const buttonClick = blockActionsPayload.actions.filter(action => action.type === "button").map(action => ({
+						action: action.action_id,
+						value: action.value
+					}))?.[0];
+					console.log("BUTTON CLICK", buttonClick)
 					await updateModal(blockActionsPayload.view.id, {
 						type: "modal",
 						title: {
@@ -86,7 +91,7 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 							text: "Submit"
 						},
 						blocks: [
-							...(await action.run(flattenedInputs))
+							...(await action.run(flattenedInputs, buttonClick))
 						]
 					})
 				}
