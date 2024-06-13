@@ -1,7 +1,7 @@
 import Bot, { Action } from "./barbell/bot";
 
 const bot = new Bot()
-const inputAction = new Action({
+const newUserAction = new Action({
 	name: "New User",
 	handler: async (io) => {
 		const fname = await io.input.text("Enter your first name")
@@ -18,6 +18,6 @@ const inputAction = new Action({
 		}
 	}
 })
-bot.defineAction(inputAction)
+bot.defineAction(newUserAction)
 
 export default bot
