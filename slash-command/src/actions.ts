@@ -1,20 +1,21 @@
 import Bot, { Action } from "./barbell/bot";
 
 const bot = new Bot()
-const action = new Action({
-	name: "Hello world",
-	handler: async (io) => {
-		await io.output.markdown("Hello, world!")
-	}
-})
-bot.defineAction(action)
-
 const inputAction = new Action({
 	name: "New User",
 	handler: async (io) => {
-		const name = await io.input.text("Enter your name")
-		const email = await io.input.text("Enter your email")
-		await io.output.markdown(`New user: ${name} (${email})`)
+		const fname = await io.input.text("Enter your first name")
+		const lname = await io.input.text(`Hi, ${fname}! Enter your last name`)
+		await io.output.markdown(`Welcome to Barbell, ${fname} ${lname}!`)
+		const dob = await io.input.date("Enter your DOB")
+		const age = new Date().getFullYear() - new Date(dob).getFullYear()
+		if (age > 18) {
+			await io.output.markdown(`${age} > 18, so you are an adult`)
+			const email = await io.input.text("Enter your email")
+			await io.output.markdown(`New user: ${fname} ${lname} (${email})`)
+		} else {
+			await io.output.markdown('You are too young to use this service')
+		}
 	}
 })
 bot.defineAction(inputAction)

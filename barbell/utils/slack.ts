@@ -93,15 +93,13 @@ export const default_blocks = () => {
 
 export enum SlackIntent {
 	SELECT__BOTH = "Select both gates",
-	SELECT__MISSION_ST = "Select Mission Gate",
-	SELECT__OTIS_GATE = "Select Otis Gate",
+	BOOK_CONFERENCE_ROOM = "Book Conference Room",
 	DEFAULT = "Default"
 }
 
 export const SlackIntentToBlocks: Record<SlackIntent, () => (Block | KnownBlock)[]> = {
 	[SlackIntent.SELECT__BOTH]: open_garage_and_gate_blocks,
-	[SlackIntent.SELECT__MISSION_ST]: open_garage_blocks,
-	[SlackIntent.SELECT__OTIS_GATE]: open_gate_blocks,
+	[SlackIntent.BOOK_CONFERENCE_ROOM]: open_gate_blocks,
 	[SlackIntent.DEFAULT]: default_blocks
 }
 
@@ -114,11 +112,8 @@ export const guessIntent = async (event: SlackMentionEventBody) => {
 	if (event.event.text.toLowerCase().includes('open')) {
 		intent = SlackIntent.SELECT__BOTH;
 	}
-	else if (event.event.text.toLowerCase().includes('garage')) {
-		intent = SlackIntent.SELECT__MISSION_ST;
-	}
-	else if (event.event.text.toLowerCase().includes('gate')) {
-		intent = SlackIntent.SELECT__OTIS_GATE;
+	else if (event.event.text.toLowerCase().includes('conference')) {
+		intent = SlackIntent.BOOK_CONFERENCE_ROOM;
 	}
 	else {
 		intent = SlackIntent.DEFAULT;

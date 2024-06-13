@@ -68,6 +68,13 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 					const actionName = blockActionsPayload.view.title.text
 					console.log("GOT INPUTS", actionName, inputs)
 					const action = bot.getAction(actionName)
+					// inputs is a list of {key: object} -> flatten this into one object
+					const flattenedInputs = inputs.reduce((acc, input) => {
+						const key = Object.keys(input)[0];
+						acc[key] = input[key];
+						return acc;
+					}, {});
+					console.log("FLATTENED INPUTS", flattenedInputs);
 					await updateModal(blockActionsPayload.view.id, {
 						type: "modal",
 						title: {
@@ -79,7 +86,7 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 							text: "Submit"
 						},
 						blocks: [
-							...(await action.run())
+							...(await action.run(flattenedInputs))
 						]
 					})
 				}

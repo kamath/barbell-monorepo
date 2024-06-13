@@ -23,6 +23,18 @@ abstract class Input extends InputOutput {
 	}
 	abstract getValue(): string | number | boolean
 	abstract render(): Block[]
+	static fromSlackState(name: string, state: {
+		type: string,
+		[key: string]: any
+	}) {
+		if (state.type === "plain_text_input") {
+			return new TextInput(name, state.value)
+		}
+		if (state.type === "datepicker") {
+			return new DateInput(name, state.selected_date)
+		}
+		throw new Error(`Unknown input type: ${state.type}`)
+	}
 }
 
 class TextInput extends Input {
@@ -39,13 +51,20 @@ class TextInput extends Input {
 				"type": "input",
 				"element": {
 					"type": "plain_text_input",
-					"action_id": this.name
+					"multiline": false,
+					"action_id": this.name,
+					"dispatch_action_config": {
+						"trigger_actions_on": [
+							"on_enter_pressed"
+						]
+					},
+					...(this.value ? { "initial_value": this.value } : {})
 				},
 				"label": {
 					"type": "plain_text",
 					"text": this.name,
 					"emoji": true
-				}
+				},
 			}
 		]
 	}
@@ -66,6 +85,7 @@ class DateInput extends Input {
 				"elements": [
 					{
 						"type": "datepicker",
+						...(this.value ? { "initial_date": this.value } : {}),
 						"placeholder": {
 							"type": "plain_text",
 							"text": this.name,
@@ -110,16 +130,6 @@ class MarkdownOutput extends Output {
 	}
 }
 
-const io = {
-	input: {
-		text: async (name: string) => new TextInput(name),
-		date: async (name: string) => new DateInput(name)
-	},
-	output: {
-		markdown: async (value: string) => new MarkdownOutput(value)
-	}
-}
-
 type IO = {
 	input: {
 		text: (name: string) => Promise<string>
@@ -132,6 +142,7 @@ type IO = {
 
 class ActionRunner {
 	readonly io: IO
+	private state: Record<string, Input> = {}
 	private inputoutputs: InputOutput[] = []
 	readonly name: string
 	readonly handler: (io: IO) => Promise<void>
@@ -145,17 +156,20 @@ class ActionRunner {
 			input: {
 				text: async (name: string): Promise<string> => {
 					console.log("ADDING TEXT INPUT", name)
-					if (this.inputoutputs.find(inputoutput => inputoutput.name === name)) {
-						const input = this.inputoutputs.find(inputoutput => inputoutput.name === name) as TextInput
-						return await input.getValue()
+					if (this.state[name]) {
+						const input = this.state[name] as TextInput
+						this.inputoutputs.push(input)
+						return input.getValue()
 					}
 					const input = new TextInput(name)
 					this.inputoutputs.push(input)
 					throw new BarbellIOError(`Input ${name} is not set`)
 				},
 				date: async (name: string): Promise<string> => {
-					if (this.inputoutputs.find(inputoutput => inputoutput.name === name)) {
-						const input = this.inputoutputs.find(inputoutput => inputoutput.name === name) as DateInput
+					console.log("ADDING DATE INPUT", name)
+					if (this.state[name]) {
+						const input = this.state[name] as DateInput
+						this.inputoutputs.push(input)
 						return input.getValue()
 					}
 					const input = new DateInput(name)
@@ -177,8 +191,11 @@ class ActionRunner {
 		this.handler = handler
 	}
 
-	public async run(): Promise<Block[]> {
+	public async run(inputs?: Record<string, Input> | undefined): Promise<Block[]> {
 		console.log("INPUTS", this.inputoutputs)
+		if (inputs) {
+			this.state = inputs
+		}
 		await this.handler(this.io).catch(async e => {
 			if (e instanceof BarbellIOError) {
 				console.error("BarbellIOError:", e.message);
@@ -187,7 +204,9 @@ class ActionRunner {
 				throw e
 			}
 		})
-		return (await Promise.all(this.inputoutputs.map(inputoutput => inputoutput.render()))).flat()
+		const toReturn = (await Promise.all(this.inputoutputs.map(inputoutput => inputoutput.render()))).flat()
+		console.log("RENDERING BLOCKS", toReturn)
+		return toReturn
 	}
 }
 
@@ -199,9 +218,14 @@ export class Action {
 		this.name = name
 		this.handler = handler
 	}
-	async run(inputs?: Record<string, string>) {
-		const actionRunner = new ActionRunner({ name: this.name, handler: this.handler })
-		return await actionRunner.run(inputs)
+	async run(inputs?: Record<string, { type: string, [key: string]: any }> | undefined) {
+		const actionRunner = new ActionRunner({ name: this.name, handler: this.handler }) // Allow everything to be stateless server-side
+		if (inputs) {
+			const definedInputs = Array.from(Object.keys(inputs)).map(key => ({ [key]: Input.fromSlackState(key, inputs[key]) })).reduce((acc, input) => ({ ...acc, ...input }), {})
+			console.log("PREDEFINED INPUTS", definedInputs)
+			return await actionRunner.run(definedInputs)
+		}
+		return await actionRunner.run()
 	}
 }
 
