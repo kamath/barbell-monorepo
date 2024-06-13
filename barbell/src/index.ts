@@ -25,9 +25,12 @@ const openGarageAction = new Action({
 	handler: async (io) => {
 		await io.output.markdown("Opening garage...")
 		await io.input.button("Open", async () => {
-			console.log("\n\n\n\nGarage opened\n\n\n\n")
-			await io.output.markdown("Garage opened!")
-		})
+			if (Math.random() > 0.5) {
+				await io.output.markdown("Garage opened!")
+			} else {
+				await io.output.markdown("Garage failed to open!")
+			}
+		}, 'primary')
 	}
 })
 bot.defineAction(openGarageAction)

@@ -19,8 +19,8 @@ apply: init
 	cd iac && terraform output -raw ecs_task_definition_json > task_definition.json
 
 run:
-	cd barbell && bun run --hot src/index.ts
-
+	cd barbell && bun run dev
+	
 run-ngrok:
 	ngrok http --domain=${NGROK_URL} 3000
 
