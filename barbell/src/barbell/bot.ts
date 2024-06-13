@@ -105,9 +105,11 @@ class DateInput extends Input {
 
 class ButtonInput extends Input {
 	private readonly onClick: () => Promise<void>
-	constructor(name: string, onClick: () => Promise<void>) {
+	private readonly style: 'default' | 'primary' | 'danger'
+	constructor(name: string, onClick: () => Promise<void>, style: 'default' | 'primary' | 'danger') {
 		super(name)
 		this.onClick = onClick
+		this.style = style
 	}
 	render() {
 		return [
@@ -122,7 +124,8 @@ class ButtonInput extends Input {
 							"emoji": true
 						},
 						"value": this.name,
-						"action_id": this.name
+						"action_id": this.name,
+						...(this.style !== 'default' ? { "style": this.style } : {})
 					}
 				]
 			}
@@ -165,7 +168,7 @@ type IO = {
 	input: {
 		text: (name: string) => Promise<string>
 		date: (name: string) => Promise<string>
-		button: (name: string, onClick: () => Promise<void>) => Promise<void>
+		button: (name: string, onClick: () => Promise<void>, style?: 'default' | 'primary' | 'danger') => Promise<void>
 	}
 	output: {
 		markdown: (value: string) => Promise<MarkdownOutput>
@@ -208,8 +211,8 @@ class ActionRunner {
 					this.inputoutputs.push(input)
 					throw new BarbellIOError(`Input ${name} is not set`)
 				},
-				button: async (name: string, onClick: () => Promise<void>): Promise<void> => {
-					const input = new ButtonInput(name, onClick)
+				button: async (name: string, onClick: () => Promise<void>, style?: 'default' | 'primary' | 'danger'): Promise<void> => {
+					const input = new ButtonInput(name, onClick, style || 'default')
 					this.inputoutputs.push(input)
 				}
 			},
@@ -240,7 +243,6 @@ class ActionRunner {
 				throw e
 			}
 		})
-		// Render all inputs and outputs before button clicks
 		await Promise.all(this.inputoutputs.map(inputoutput => inputoutput.render()))
 		if (buttonClick) {
 			this.inputoutputs.filter(inputoutput => inputoutput.name === buttonClick.value).forEach(async inputoutput => {
