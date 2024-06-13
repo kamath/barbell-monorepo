@@ -2,6 +2,7 @@
 import { Block, Option, KnownBlock } from "@slack/web-api";
 import { Action } from "../barbell/bot";
 import { BlockActionsPayload } from "../types/slackEvent";
+import bot from "../actions";
 
 interface BlockPromptSkeleton {
   type: string;
@@ -74,9 +75,9 @@ class BlockModalConstructor {
   private blockActionsPayload: BlockActionsPayload;
   private action!: Action;
 
-  constructor(blockActionsPayload: BlockActionsPayload, action: Action) {
+  constructor(blockActionsPayload: BlockActionsPayload, action: string) {
     this.blockActionsPayload = blockActionsPayload;
-    this.action = action;
+    this.action = bot.getAction(action);
   }
 
   flattenInputs() {
@@ -90,9 +91,6 @@ class BlockModalConstructor {
   }
 
   async getExistingModal() {
-    console.log("GETTING EXISTING MODAL");
-    let snthing = await this.action.run(this.flattenInputs());
-    console.log("SNTHING", snthing);
     return {
       type: "modal",
       title: {
@@ -108,7 +106,6 @@ class BlockModalConstructor {
   }
 
   async getNewModal() {
-    console.log("GETTING NEW MODAL");
     return {
       type: "modal",
       title: {

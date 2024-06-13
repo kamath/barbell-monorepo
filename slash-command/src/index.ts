@@ -43,16 +43,13 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 		
         if (actionInput.action_id !== INIT_ACTION_ID) {
           if (blockActionsPayload.view.state) {
-            const inputAction = bot.getAction(blockActionsPayload.view.title.text);
-            const promptConstructor = new BlockModalConstructor(blockActionsPayload, inputAction);
-
+            const promptConstructor = new BlockModalConstructor(blockActionsPayload, blockActionsPayload.view.title.text);
             const promptFolowup = await promptConstructor.getExistingModal();
             await updateModal(blockActionsPayload.view.id, promptFolowup as ModalView);
           }
           return;
         } else {
-          const action = bot.getAction(getActionValue(actionInput));
-          const promptConstructor = new BlockModalConstructor(blockActionsPayload, action);
+          const promptConstructor = new BlockModalConstructor(blockActionsPayload, getActionValue(actionInput));
           const initalAction = await promptConstructor.getNewModal();
           await updateModal(blockActionsPayload.view.id, initalAction as ModalView);
           return;
