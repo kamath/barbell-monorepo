@@ -20,4 +20,16 @@ const newUserAction = new Action({
 })
 bot.defineAction(newUserAction)
 
+const openGarageAction = new Action({
+	name: "Open Garage",
+	handler: async (io) => {
+		await io.output.markdown("Opening garage...")
+		await io.input.button("Open", async () => {
+			console.log("\n\n\n\nGarage opened\n\n\n\n")
+			await io.output.markdown("Garage opened!")
+		})
+	}
+})
+bot.defineAction(openGarageAction)
+
 export default bot

@@ -21,7 +21,7 @@ abstract class Input extends InputOutput {
 			throw new BarbellIOError(`Value for ${this.name} is not set`)
 		}
 	}
-	abstract getValue(): string | number | boolean
+	abstract getValue(): Promise<string | number | boolean>
 	abstract render(): Block[]
 	static fromSlackState(name: string, state: {
 		type: string,
@@ -68,7 +68,7 @@ class TextInput extends Input {
 			}
 		]
 	}
-	getValue() {
+	async getValue() {
 		this.ensureValue()
 		return this.value as string
 	}
@@ -97,9 +97,40 @@ class DateInput extends Input {
 			}
 		]
 	}
-	getValue() {
+	async getValue() {
 		this.ensureValue()
 		return this.value as string
+	}
+}
+
+class ButtonInput extends Input {
+	private readonly onClick: () => Promise<void>
+	constructor(name: string, onClick: () => Promise<void>) {
+		super(name)
+		this.onClick = onClick
+	}
+	render() {
+		return [
+			{
+				"type": "actions",
+				"elements": [
+					{
+						"type": "button",
+						"text": {
+							"type": "plain_text",
+							"text": this.name,
+							"emoji": true
+						},
+						"value": this.name,
+						"action_id": this.name
+					}
+				]
+			}
+		]
+	}
+	async getValue() {
+		await this.onClick()
+		return true
 	}
 }
 
@@ -134,6 +165,7 @@ type IO = {
 	input: {
 		text: (name: string) => Promise<string>
 		date: (name: string) => Promise<string>
+		button: (name: string, onClick: () => Promise<void>) => Promise<void>
 	}
 	output: {
 		markdown: (value: string) => Promise<MarkdownOutput>
@@ -175,6 +207,10 @@ class ActionRunner {
 					const input = new DateInput(name)
 					this.inputoutputs.push(input)
 					throw new BarbellIOError(`Input ${name} is not set`)
+				},
+				button: async (name: string, onClick: () => Promise<void>): Promise<void> => {
+					const input = new ButtonInput(name, onClick)
+					this.inputoutputs.push(input)
 				}
 			},
 			output: {
@@ -191,7 +227,7 @@ class ActionRunner {
 		this.handler = handler
 	}
 
-	public async run(inputs?: Record<string, Input> | undefined): Promise<Block[]> {
+	public async run(inputs?: Record<string, Input> | undefined, buttonClick?: { action: string, value: string } | undefined): Promise<Block[]> {
 		console.log("INPUTS", this.inputoutputs)
 		if (inputs) {
 			this.state = inputs
@@ -204,6 +240,15 @@ class ActionRunner {
 				throw e
 			}
 		})
+		// Render all inputs and outputs before button clicks
+		await Promise.all(this.inputoutputs.map(inputoutput => inputoutput.render()))
+		if (buttonClick) {
+			this.inputoutputs.filter(inputoutput => inputoutput.name === buttonClick.value).forEach(async inputoutput => {
+				if (inputoutput instanceof ButtonInput) {
+					await inputoutput.getValue()
+				}
+			})
+		}
 		const toReturn = (await Promise.all(this.inputoutputs.map(inputoutput => inputoutput.render()))).flat()
 		console.log("RENDERING BLOCKS", toReturn)
 		return toReturn
@@ -218,14 +263,14 @@ export class Action {
 		this.name = name
 		this.handler = handler
 	}
-	async run(inputs?: Record<string, { type: string, [key: string]: any }> | undefined) {
+	async run(inputs?: Record<string, { type: string, [key: string]: any }> | undefined, buttonClick?: { action: string, value: string } | undefined) {
 		const actionRunner = new ActionRunner({ name: this.name, handler: this.handler }) // Allow everything to be stateless server-side
 		if (inputs) {
 			const definedInputs = Array.from(Object.keys(inputs)).map(key => ({ [key]: Input.fromSlackState(key, inputs[key]) })).reduce((acc, input) => ({ ...acc, ...input }), {})
 			console.log("PREDEFINED INPUTS", definedInputs)
-			return await actionRunner.run(definedInputs)
+			return await actionRunner.run(definedInputs, buttonClick)
 		}
-		return await actionRunner.run()
+		return await actionRunner.run(undefined, buttonClick)
 	}
 }
 
