@@ -1,9 +1,40 @@
 import { Elysia } from "elysia";
 import { ShortcutPayload } from "./types/slashCommandPayload";
-import { getActionValue, openModal, updateModal } from "./utils/slack";
+import { getActionValue, openModal, publishHomeTab, updateModal } from "./utils/slack";
 import { BlockActionsPayload } from "./types/slackEvent";
 import bot from "..";
 import { INIT_ACTION_ID, INIT_MODAL_NAME } from "./consts";
+import { Action } from "./bot";
+import { HeaderBlock } from "@slack/web-api";
+
+const actionsBlocks = [
+	{
+		"type": "section",
+		"text": {
+			"type": "mrkdwn",
+			"text": "Pick an item from the dropdown list"
+		},
+		"accessory": {
+			"type": "static_select",
+			"placeholder": {
+				"type": "plain_text",
+				"text": "Select an item",
+				"emoji": true
+			},
+			"options": Object.values(bot.getActions()).map(action => {
+				return {
+					"text": {
+						"type": "plain_text",
+						"text": action.name,
+						"emoji": true
+					},
+					"value": action.name
+				}
+			}),
+			"action_id": INIT_ACTION_ID
+		}
+	}
+]
 
 const app = new Elysia()
 app.get("/", () => "Hello Elysia")
@@ -11,51 +42,18 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 	if (body.challenge) {
 		return body.challenge;
 	}
+	else if (body.event && body.event.type === "app_home_opened") {
+		console.log("APP HOME OPENED", body)
+		await publishHomeTab(body.event.user, actionsBlocks, "Barbell cURL");
+	}
+
 	else if (body.payload) {
 		console.log("Body", body)
 		const payload = JSON.parse(body.payload)
 		console.log("Slash Command Payload", payload)
 		if (payload.type === "shortcut") {
 			const shortcutPayload = payload as ShortcutPayload
-			await openModal(shortcutPayload.trigger_id, {
-				type: "modal",
-				title: {
-					type: "plain_text",
-					text: INIT_MODAL_NAME
-				},
-				submit: {
-					type: "plain_text",
-					text: "Submit"
-				},
-				blocks: [
-					{
-						"type": "section",
-						"text": {
-							"type": "mrkdwn",
-							"text": "Pick an item from the dropdown list"
-						},
-						"accessory": {
-							"type": "static_select",
-							"placeholder": {
-								"type": "plain_text",
-								"text": "Select an item",
-								"emoji": true
-							},
-							"options": Object.values(bot.getActions()).map(action => {
-								return {
-									"text": {
-										"type": "plain_text",
-										"text": action.name,
-										"emoji": true
-									},
-									"value": action.name
-								}
-							}),
-							"action_id": INIT_ACTION_ID
-						}
-					}
-				]
-			});
+			await openModal(shortcutPayload.trigger_id, actionsBlocks, INIT_MODAL_NAME)
 		}
 		else if (payload.type === "block_actions") {
 			const blockActionsPayload = payload as BlockActionsPayload
@@ -65,9 +63,10 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 				if (blockActionsPayload.view.state) {
 					const { state } = blockActionsPayload.view
 					const inputs = Array.from(Object.values(state.values))
-					const actionName = blockActionsPayload.view.title.text
+					const actionName = (blockActionsPayload.view.type === 'modal') ? blockActionsPayload.view.title.text : (blockActionsPayload.view.blocks[0] as HeaderBlock).text.text
 					console.log("GOT INPUTS", actionName, inputs)
 					const action = bot.getAction(actionName)
+					if (action === undefined) throw new Error("Action not found")
 					// inputs is a list of {key: object} -> flatten this into one object
 					const flattenedInputs = inputs.reduce((acc, input) => {
 						const key = Object.keys(input)[0];
@@ -80,44 +79,34 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 						value: action.value
 					}))?.[0];
 					console.log("BUTTON CLICK", buttonClick)
-					await updateModal(blockActionsPayload.view.id, {
-						type: "modal",
-						title: {
-							type: "plain_text",
-							text: action.name
-						},
-						submit: {
-							type: "plain_text",
-							text: "Submit"
-						},
-						blocks: [
-							...(await action.run(flattenedInputs, buttonClick))
-						]
-					})
+					const blocks = await action.run(flattenedInputs, buttonClick)
+					console.log("RENDERING BLOCKS", blocks)
+					if (blockActionsPayload.view.type === 'modal') {
+						await updateModal(blockActionsPayload.view.id, blocks, action.name, "Submit")
+					}
+					else {
+						await publishHomeTab(blockActionsPayload.user.id, blocks, action.name)
+					}
 				}
 				return
 			}
 			else {
 				const intendedAction = getActionValue(actionInput)
 				const action = bot.getAction(intendedAction)
-				await updateModal(blockActionsPayload.view.id, {
-					type: "modal",
-					title: {
-						type: "plain_text",
-						text: action.name
-					},
-					submit: {
-						type: "plain_text",
-						text: "Submit"
-					},
-					blocks: [
-						...(await action.run())
-					]
-				})
+				const blocks = await action.run()
+				if (blockActionsPayload.view.type === 'modal') {
+					await updateModal(blockActionsPayload.view.id, blocks, action.name, "Submit")
+				}
+				else {
+					await publishHomeTab(blockActionsPayload.user.id, blocks, action.name)
+				}
 				return
 			}
 		}
 		else console.log("No payload tag", JSON.parse(body.payload))
+	}
+	else {
+		console.log("Unhandled event", body)
 	}
 })
 app.listen(3000);

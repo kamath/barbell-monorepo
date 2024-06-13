@@ -8,12 +8,38 @@ export const client = new WebClient(SLACK_SECRETS.SLACK_OAUTH_TOKEN, {
 	logLevel: LogLevel.DEBUG
 });
 
-export const openModal = async (trigger_id: string, modalBlocks: ModalView) => {
-	await client.views.open({ trigger_id, view: modalBlocks });
+export const openModal = async (trigger_id: string, blocks: Block[], title: string, submit?: string) => {
+	await client.views.open({
+		trigger_id, view: {
+			type: "modal",
+			title: {
+				type: "plain_text",
+				text: title
+			},
+			submit: {
+				type: "plain_text",
+				text: submit || "Submit"
+			},
+			blocks
+		}
+	});
 }
 
-export const updateModal = async (viewId: string, modalBlocks: ModalView) => {
-	await client.views.update({ view_id: viewId, view: modalBlocks });
+export const updateModal = async (viewId: string, blocks: Block[], title: string, submit?: string) => {
+	await client.views.update({
+		view_id: viewId, view: {
+			type: "modal",
+			title: {
+				type: "plain_text",
+				text: title
+			},
+			submit: {
+				type: "plain_text",
+				text: submit || "Submit"
+			},
+			blocks
+		}
+	});
 }
 
 // TODO: This is a hack, but it works for now
@@ -25,4 +51,24 @@ export const getActionValue = (action: any): string => {
 		return action.value
 	}
 	throw new Error(`Unsupported action type: ${action.type}`)
+}
+
+export const publishHomeTab = async (user_id: string, blocks: Block[], title: string) => {
+	await client.views.publish({
+		user_id,
+		view: {
+			type: "home",
+			blocks: [{
+				type: "header",
+				text: {
+					type: "plain_text",
+					text: title
+				}
+			}, ...blocks, {
+				type: "divider"
+			},]
+		}
+	});
+	console.log("Published home tab", blocks);
+	return { status: 200 };
 }
