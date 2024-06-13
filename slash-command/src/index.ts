@@ -7,67 +7,62 @@ import { INIT_ACTION_ID, INIT_MODAL_NAME } from "./consts";
 import { BlockPromptSkeleton, BlockPromptConstructor, BlockModalConstructor } from "./payloads/prompt";
 import { ModalView } from "@slack/web-api";
 
-type SlackPayload =
-  | ShortcutPayload
-  | BlockActionsPayload
+type SlackPayload = ShortcutPayload | BlockActionsPayload;
 
-
-  const blockPromptSkeleton: BlockPromptSkeleton = {
-    type: "modal",
-    title: INIT_MODAL_NAME,
-	action_id: INIT_ACTION_ID,
-    submit: "Submit",
-    blocks: [],
+const blockPromptSkeleton: BlockPromptSkeleton = {
+  type: "modal",
+  title: INIT_MODAL_NAME,
+  action_id: INIT_ACTION_ID,
+  submit: "Submit",
+  blocks: [],
 };
 
-
-
-const app = new Elysia()
-app.get("/", () => "Hello Elysia")
+const app = new Elysia();
+app.get("/", () => "Hello Elysia");
 app.post("/slack/events", async ({ body }: { body: any }) => {
-	if (body.challenge) {
-		return body.challenge;
-	}
-	else if (body.payload) {
-		console.log("Body", body)
-		const payload : SlackPayload = JSON.parse(body.payload);
-		console.log("Slash Command Payload", payload)
-		switch(payload.type) { 
-			case "shortcut": 
-				const blockPromptConstructor = new BlockPromptConstructor(blockPromptSkeleton, Object.values(bot.getActions()));
-				const modal = blockPromptConstructor.getPromptModal(payload.trigger_id);
-				await openModal(payload.trigger_id, modal as ModalView)
-			break; 
-			case "block_actions": 
-				console.log("Block Actions Payload", payload);
-				const blockActionsPayload = payload as BlockActionsPayload;
-				const actionInput = blockActionsPayload.actions[0];
-				const promptConstructor = new BlockModalConstructor(blockActionsPayload);
-				if (actionInput.action_id !== INIT_ACTION_ID) {
-					if(blockActionsPayload.view.state) { 
-					// handle the first action senario;
-					
-					const promptFolowup = await promptConstructor.getExistingModal() ;
-					await updateModal(blockActionsPayload.view.id, promptFolowup as ModalView );
-				} else { 
-					// handle the second action senario; 
-					const initalAction = await promptConstructor.getNewModal();
-					const intendedAction = getActionValue(actionInput);
-					const action = bot.getAction(intendedAction);
-					await updateModal(blockActionsPayload.view.id, initalAction as ModalView);
-						
-				}
-				return
-			}
-			break; 
-			default: 
-				console.log("Unknown payload type", body.payload)
-		} 
-			}
-})
+  if (body.challenge) {
+    return body.challenge;
+  } else if (body.payload) {
+
+    console.log("Body", body);
+    const payload: SlackPayload = JSON.parse(body.payload);
+    console.log("Slash Command Payload", payload);
+
+    switch (payload.type) {
+
+      case "shortcut":
+        const blockPromptConstructor = new BlockPromptConstructor(blockPromptSkeleton, Object.values(bot.getActions()));
+        const modal = blockPromptConstructor.getPromptModal(payload.trigger_id);
+        await openModal(payload.trigger_id, modal as ModalView);
+        break;
+		
+      case "block_actions":
+        console.log("Block Actions Payload", payload);
+        const blockActionsPayload = payload as BlockActionsPayload;
+        const actionInput = blockActionsPayload.actions[0];
+		
+        if (actionInput.action_id !== INIT_ACTION_ID) {
+          if (blockActionsPayload.view.state) {
+            const inputAction = bot.getAction(blockActionsPayload.view.title.text);
+            const promptConstructor = new BlockModalConstructor(blockActionsPayload, inputAction);
+
+            const promptFolowup = await promptConstructor.getExistingModal();
+            await updateModal(blockActionsPayload.view.id, promptFolowup as ModalView);
+          }
+          return;
+        } else {
+          const action = bot.getAction(getActionValue(actionInput));
+          const promptConstructor = new BlockModalConstructor(blockActionsPayload, action);
+          const initalAction = await promptConstructor.getNewModal();
+          await updateModal(blockActionsPayload.view.id, initalAction as ModalView);
+          return;
+        }
+        break;
+      default:
+        console.log("Unknown payload type", body.payload);
+    }
+  }
+});
 app.listen(3000);
 
-
-console.log(
-	`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
-);
+console.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`);
