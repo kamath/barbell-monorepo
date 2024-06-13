@@ -9,3 +9,5 @@ dev/new_new_sub_utils/*.js
 
 
 # Ignore all .env file
+slash-command/node_modules
+slash-command/dist
