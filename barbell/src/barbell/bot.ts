@@ -8,8 +8,8 @@ abstract class InputOutput {
 }
 
 abstract class Input extends InputOutput {
-	public value: string | number | boolean | undefined
-	constructor(readonly name: string, value?: string | number | boolean | undefined) {
+    public value: string | number | boolean | (string | number | boolean)[] | undefined
+    constructor(readonly name: string, value?: string | number | boolean | (string | number | boolean)[]) {
 		super(name)
 		this.value = value
 	}
@@ -21,7 +21,9 @@ abstract class Input extends InputOutput {
 			throw new BarbellIOError(`Value for ${this.name} is not set`)
 		}
 	}
-	abstract getValue(): Promise<string | number | boolean>
+	abstract getValue(): Promise<string | number | boolean | (string | number | boolean)[]>
+
+	//abstract getValue(): string | number | boolean | (string | number | boolean)[]
 	abstract render(): Block[]
 	static fromSlackState(name: string, state: {
 		type: string,
@@ -32,6 +34,9 @@ abstract class Input extends InputOutput {
 		}
 		if (state.type === "datepicker") {
 			return new DateInput(name, state.selected_date)
+		}
+		if(state.type === "multi_static_select") {
+			return new MultiSelectInput(name, state.selected_options.map((option: { value: string }) => option.value))
 		}
 		throw new Error(`Unknown input type: ${state.type}`)
 	}
@@ -137,6 +142,55 @@ class ButtonInput extends Input {
 	}
 }
 
+class MultiSelectInput extends Input {
+	private options: { name: string, value: string | number | boolean }[]
+
+	constructor(name: string, options: { name: string, value: string | number | boolean }[] = [], value?: (string | number | boolean)[]) {
+		super(name, value)
+		this.options = options
+	}
+	render() {
+		return [
+			{
+
+				"type": "input",
+				"dispatch_action": true,
+				"element": {
+					"type": "multi_static_select",
+					"action_id": this.name,
+					"options": this.options.map(option => ({
+						"text": {
+							"type": "plain_text",
+							"text": option.name,
+							"emoji": true
+						},
+						"value": option.value.toString()
+					})),
+					...(this.value ? { "initial_options": (this.value as string[]).map(value => ({
+						"text": {
+							"type": "plain_text",
+							"text": this.options.find(option => option.value === value)?.name || "",
+							"emoji": true
+						},
+						"value": value.toString()
+					})) } : {})
+				},
+				"label": {
+					"type": "plain_text",
+					"text": this.name,
+					"emoji": true
+				}
+			}
+		]
+	}
+    async getValue() {
+		this.ensureValue()
+		return this.value as (string | number | boolean)[]
+	}
+}
+
+
+
 abstract class Output extends InputOutput {
 	constructor(name: string) {
 		super(name)
@@ -164,11 +218,14 @@ class MarkdownOutput extends Output {
 	}
 }
 
+
+
 type IO = {
 	input: {
 		text: (name: string) => Promise<string>
 		date: (name: string) => Promise<string>
 		button: (name: string, onClick: () => Promise<void>, style?: 'default' | 'primary' | 'danger') => Promise<void>
+		multiSelect: (name: string, value: { name: string, value: string | number | boolean }[]) => Promise<(string | number | boolean)[]>
 	}
 	output: {
 		markdown: (value: string) => Promise<MarkdownOutput>
@@ -208,6 +265,17 @@ class ActionRunner {
 						return input.getValue()
 					}
 					const input = new DateInput(name)
+					this.inputoutputs.push(input)
+					throw new BarbellIOError(`Input ${name} is not set`);
+				},
+				multiSelect: async (name: string, value: { name: string, value: string | number | boolean }[]): Promise<(string | number | boolean)[]> => {
+					console.log("ADDING MULTISELECT INPUT", name)
+					if (this.state[name]) {
+						const input = this.state[name] as MultiSelectInput
+						this.inputoutputs.push(input)
+						return input.getValue()
+					}
+					const input = new MultiSelectInput(name, value)
 					this.inputoutputs.push(input)
 					throw new BarbellIOError(`Input ${name} is not set`)
 				},

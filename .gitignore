@@ -11,3 +11,7 @@ dev/new_new_sub_utils/*.js
 # Ignore all .env file
 slash-command/node_modules
 slash-command/dist
+barbell/node_modules
+
+bolt-bot/src/node_modules
+
