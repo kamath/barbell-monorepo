@@ -4,6 +4,7 @@ const bot = new Bot()
 const newUserAction = new Action({
 	name: "New User",
 	handler: async (io) => {
+		console.log("here")
 		const fname = await io.input.text("Enter your first name")
 		const lname = await io.input.text(`Hi, ${fname}! Enter your last name`)
 		await io.output.markdown(`Welcome to Barbell, ${fname} ${lname}!`)
