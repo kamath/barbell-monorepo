@@ -21,7 +21,9 @@ abstract class Input extends InputOutput {
 			throw new BarbellIOError(`Value for ${this.name} is not set`)
 		}
 	}
-	abstract getValue(): Promise<string | number | boolean>
+	abstract getValue(): Promise<string | number | boolean | (string | number | boolean)[]>
+
+	//abstract getValue(): string | number | boolean | (string | number | boolean)[]
 	abstract render(): Block[]
 	static fromSlackState(name: string, state: {
 		type: string,
@@ -106,7 +108,6 @@ class DateInput extends Input {
 	}
 }
 
-<<<<<<< HEAD:barbell/src/barbell/bot.ts
 class ButtonInput extends Input {
 	private readonly onClick: () => Promise<void>
 	private readonly style: 'default' | 'primary' | 'danger'
@@ -114,21 +115,10 @@ class ButtonInput extends Input {
 		super(name)
 		this.onClick = onClick
 		this.style = style
-=======
-
-	
-class MultiSelectInput extends Input {
-	private options: { name: string, value: string | number | boolean }[]
-
-	constructor(name: string, options: { name: string, value: string | number | boolean }[] = [], value?: (string | number | boolean)[]) {
-		super(name, value)
-		this.options = options
->>>>>>> e221d38 (pushing support for multi-select):slash-command/src/barbell/bot.ts
 	}
 	render() {
 		return [
 			{
-<<<<<<< HEAD:barbell/src/barbell/bot.ts
 				"type": "actions",
 				"elements": [
 					{
@@ -152,7 +142,17 @@ class MultiSelectInput extends Input {
 	}
 }
 
-=======
+class MultiSelectInput extends Input {
+	private options: { name: string, value: string | number | boolean }[]
+
+	constructor(name: string, options: { name: string, value: string | number | boolean }[] = [], value?: (string | number | boolean)[]) {
+		super(name, value)
+		this.options = options
+	}
+	render() {
+		return [
+			{
+
 				"type": "input",
 				"dispatch_action": true,
 				"element": {
@@ -183,17 +183,14 @@ class MultiSelectInput extends Input {
 			}
 		]
 	}
-    getValue(): (string | number | boolean)[] {
+    async getValue() {
 		this.ensureValue()
-		return this.value as (string | number | boolean)[];
-
-
-}
+		return this.value as (string | number | boolean)[]
+	}
 }
 
 
 
->>>>>>> e221d38 (pushing support for multi-select):slash-command/src/barbell/bot.ts
 abstract class Output extends InputOutput {
 	constructor(name: string) {
 		super(name)
@@ -227,11 +224,8 @@ type IO = {
 	input: {
 		text: (name: string) => Promise<string>
 		date: (name: string) => Promise<string>
-<<<<<<< HEAD:barbell/src/barbell/bot.ts
 		button: (name: string, onClick: () => Promise<void>, style?: 'default' | 'primary' | 'danger') => Promise<void>
-=======
 		multiSelect: (name: string, value: { name: string, value: string | number | boolean }[]) => Promise<(string | number | boolean)[]>
->>>>>>> e221d38 (pushing support for multi-select):slash-command/src/barbell/bot.ts
 	}
 	output: {
 		markdown: (value: string) => Promise<MarkdownOutput>
