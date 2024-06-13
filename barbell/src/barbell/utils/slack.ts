@@ -26,16 +26,3 @@ export const getActionValue = (action: any): string => {
 	}
 	throw new Error(`Unsupported action type: ${action.type}`)
 }
-
-export const publishHomeTab = async (user_id: string, homeTabGenerator: (user_id: string) => Promise<Block[]>) => {
-	const homeTab = await homeTabGenerator(user_id);
-	await client.views.publish({
-		user_id,
-		view: {
-			type: "home",
-			blocks: homeTab
-		}
-	});
-	console.log("Published home tab", homeTab);
-	return { status: 200 };
-}
