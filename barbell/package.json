@@ -1,5 +1,5 @@
 {
-  "name": "barbell",
+  "name": "slash-command",
   "version": "1.0.50",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -7,22 +7,11 @@
   },
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.592.0",
-    "@interval/sdk": "^2.0.0",
-    "@prisma/client": "5.15.0",
-    "@slack/bolt": "^3.18.0",
     "@slack/web-api": "^7.0.4",
-    "aws-sdk": "^2.1638.0",
-    "axios": "^1.7.2",
-    "body-parser": "^1.20.2",
-    "elysia": "latest",
-    "express": "^4.19.2",
-    "uuid": "^9.0.1"
+    "elysia": "latest"
   },
   "devDependencies": {
-    "@types/uuid": "^9.0.8",
-    "bun-types": "latest",
-    "prisma": "5.15.0",
-    "typescript": "^5.4.5"
+    "bun-types": "latest"
   },
   "module": "src/index.js"
 }
