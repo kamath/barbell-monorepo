@@ -1,6 +1,6 @@
 import { Block } from "@slack/web-api"
-import { BarbellIOError } from "../types/ioError"
-import { INIT_MODAL_NAME } from "../consts"
+import { BarbellIOError } from "./types/ioError"
+import { INIT_MODAL_NAME } from "./consts"
 
 abstract class InputOutput {
 	constructor(readonly name: string) { }
