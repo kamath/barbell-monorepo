@@ -208,14 +208,11 @@ class MarkdownOutput extends Output {
 	render() {
 		return [
 			{
-				"type": "context",
-				"elements": [
-					{
-						"type": "plain_text",
-						"text": this.value,
-						"emoji": true
-					}
-				]
+				"type": "section",
+				"text": {
+					"type": "mrkdwn",
+					"text": this.value,
+				}
 			}
 		]
 	}
@@ -230,7 +227,7 @@ class ActionRunner {
 
 	constructor({ name, handler }: { name: string, handler: (handlerInputs: HandlerInput) => Promise<void> }) {
 		if (name === INIT_MODAL_NAME) {
-			throw new Error("Action name cannot be the same as the initial modal name")
+			throw new Error("Invalid action name, this action name is reserved for the initial modal")
 		}
 		this.name = name
 		this.io = {
@@ -319,7 +316,7 @@ export class Action {
 
 	constructor({ name, handler }: { name: string, handler: (handlerInputs: HandlerInput) => Promise<void> }) {
 		if (name.length > 25) {
-			throw new Error("Action name cannot be longer than 25 characters")
+			throw new Error(`Action name cannot be longer than 25 characters (Action name: "${name}" has ${name.length} characters)`)
 		}
 		if (name === INIT_MODAL_NAME || name === INIT_ACTION_ID) {
 			throw new Error("Invalid action name, please refrain from using a reserved action name")

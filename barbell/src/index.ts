@@ -26,7 +26,7 @@ bot.defineAction(openGarageAction)
 bot.defineDefaultAction(openGarageAction)
 
 const bookConferenceRoomAction = new Action({
-	name: "[WIP] Book Conference Room",
+	name: "Book Conference Room",
 	handler: async ({ io }) => {
 		await io.output.markdown(`*Booking a conference room is under construction, coming soon!*`)
 	}
