@@ -5,24 +5,6 @@ import { askForHelp, openGarage, openGate } from "./utils/openGarage";
 import { prisma } from "./utils/prisma";
 
 const bot = new Bot()
-const newUserAction = new Action({
-	name: "New User",
-	handler: async ({ io }) => {
-		const fname = await io.input.text("Enter your first name")
-		const lname = await io.input.text(`Hi, ${fname}! Enter your last name`)
-		await io.output.markdown(`Welcome to Barbell, ${fname} ${lname}!`)
-		const dob = await io.input.date("Enter your DOB")
-		const age = new Date().getFullYear() - new Date(dob).getFullYear()
-		if (age > 18) {
-			await io.output.markdown(`${age} > 18, so you are an adult`)
-			const email = await io.input.text("Enter your email")
-			await io.output.markdown(`New user: ${fname} ${lname} (${email})`)
-		} else {
-			await io.output.markdown('You are too young to use this service')
-		}
-	}
-})
-bot.defineAction(newUserAction)
 
 const openGarageAction = new Action({
 	name: "Open Parking Garage",
@@ -41,22 +23,16 @@ const openGarageAction = new Action({
 	}
 })
 bot.defineAction(openGarageAction)
+bot.defineDefaultAction(openGarageAction)
 
-async function testIO(io: IO) {
-	await io.output.markdown("should also show")
-}
-
-const testButtonClickAction = new Action({
-	name: "Test Button Click",
+const bookConferenceRoomAction = new Action({
+	name: "[WIP] Book Conference Room",
 	handler: async ({ io }) => {
-		await io.input.button("Test IO", async () => {
-			await io.output.markdown("should show")
-			await testIO(io)
-			await io.output.markdown("should also also show")
-		}, 'danger')
+		const name = await io.input.text("Enter the event name")
+		const date = await io.input.date("Enter the date of the event")
+		await io.output.markdown(`Booking ${name} for ${date}`)
 	}
 })
-bot.defineAction(testButtonClickAction)
+bot.defineAction(bookConferenceRoomAction)
 
-bot.defineDefaultAction(newUserAction)
 export default bot
