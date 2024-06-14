@@ -1,6 +1,6 @@
 import { Block } from "@slack/web-api"
 import { BarbellIOError } from "./types/ioError"
-import { INIT_MODAL_NAME } from "./consts"
+import { INIT_ACTION_ID, INIT_MODAL_NAME } from "./consts"
 import { ChannelType, HandlerInput, IO } from "./types/handlerInputs"
 
 abstract class InputOutput {
@@ -275,6 +275,7 @@ class ActionRunner {
 			},
 			output: {
 				markdown: async (value: string): Promise<MarkdownOutput> => {
+					console.log("ADDING MARKDOWN OUTPUT", value, this.name, this.inputoutputs)
 					if (this.inputoutputs.find(inputoutput => inputoutput.name === value)) {
 						return this.inputoutputs.find(inputoutput => inputoutput.name === value) as MarkdownOutput
 					}
@@ -302,12 +303,10 @@ class ActionRunner {
 		})
 		await Promise.all(this.inputoutputs.map(inputoutput => inputoutput.render()))
 		if (buttonClick) {
-			this.inputoutputs.filter(inputoutput => inputoutput.name === buttonClick.value).forEach(async inputoutput => {
-				if (inputoutput instanceof ButtonInput) {
-					await inputoutput.getValue()
-				}
-			})
+			const button = this.inputoutputs.find(inputoutput => inputoutput.name === buttonClick.value) as ButtonInput
+			await button.getValue()
 		}
+		console.log("INPUTOUTPUTS", this.inputoutputs)
 		const toReturn = (await Promise.all(this.inputoutputs.map(inputoutput => inputoutput.render()))).flat()
 		console.log("RENDERING BLOCKS", toReturn)
 		return toReturn
@@ -319,6 +318,12 @@ export class Action {
 	readonly handler: (handlerInputs: HandlerInput) => Promise<void>
 
 	constructor({ name, handler }: { name: string, handler: (handlerInputs: HandlerInput) => Promise<void> }) {
+		if (name.length > 25) {
+			throw new Error("Action name cannot be longer than 25 characters")
+		}
+		if (name === INIT_MODAL_NAME || name === INIT_ACTION_ID) {
+			throw new Error("Invalid action name, please refrain from using a reserved action name")
+		}
 		this.name = name
 		this.handler = handler
 	}

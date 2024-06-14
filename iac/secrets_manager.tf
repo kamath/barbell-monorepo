@@ -16,10 +16,3 @@ resource "aws_secretsmanager_secret" "solaris_garage" {
   description = "Solaris garage secrets for ${each.key} purposes"
   tags        = { "Environment" = each.key }
 }
-
-resource "aws_secretsmanager_secret" "bolt_secrets" {
-  for_each    = toset(var.environments)
-  name        = "bolt_secrets_${each.key}"
-  description = "Bolt secrets for ${each.key} purposes"
-  tags        = { "Environment" = each.key }
-}
