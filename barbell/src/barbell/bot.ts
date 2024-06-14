@@ -340,6 +340,7 @@ export class Action {
 
 export default class Bot {
 	private actions: Record<string, Action> = {}
+	private defaultAction: Action | undefined
 	constructor() { }
 	defineAction(action: Action) {
 		if (action.name in this.actions) {
@@ -352,5 +353,22 @@ export default class Bot {
 	}
 	getAction(name: string) {
 		return this.actions[name]
+	}
+
+	// Overload signatures
+	defineDefaultAction(action: Action): void
+	defineDefaultAction(actionName: string): void
+
+	// Single implementation
+	defineDefaultAction(actionOrName: Action | string): void {
+		if (typeof actionOrName === 'string') {
+			this.defaultAction = this.actions[actionOrName]
+		} else {
+			this.defaultAction = actionOrName
+		}
+	}
+
+	getDefaultAction() {
+		return this.defaultAction
 	}
 }

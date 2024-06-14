@@ -58,4 +58,5 @@ const testButtonClickAction = new Action({
 })
 bot.defineAction(testButtonClickAction)
 
+bot.defineDefaultAction(newUserAction)
 export default bot

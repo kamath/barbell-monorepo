@@ -8,34 +8,47 @@ import { Action } from "./bot";
 import { HeaderBlock } from "@slack/web-api";
 import { ChannelType } from "./types/handlerInputs";
 
-const actionsBlocks = [
-	{
-		"type": "section",
-		"text": {
-			"type": "mrkdwn",
-			"text": "Pick an item from the dropdown list"
-		},
-		"accessory": {
-			"type": "static_select",
-			"placeholder": {
-				"type": "plain_text",
-				"text": "Select an item",
-				"emoji": true
+const renderInitActionsBlocks = async (userId: string, channelId: string, channelType: ChannelType) => {
+	const defaultAction = bot.getDefaultAction()
+	const actionsBlocks = [
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": defaultAction ? "...or select a different action from the dropdown list" : "Select an action"
 			},
-			"options": Object.values(bot.getActions()).map(action => {
-				return {
-					"text": {
-						"type": "plain_text",
-						"text": action.name,
-						"emoji": true
-					},
-					"value": action.name
-				}
-			}),
-			"action_id": INIT_ACTION_ID
+			"accessory": {
+				"type": "static_select",
+				"placeholder": {
+					"type": "plain_text",
+					"text": "Select an item",
+					"emoji": true
+				},
+				"options": Object.values(bot.getActions()).map(action => {
+					return {
+						"text": {
+							"type": "plain_text",
+							"text": action.name,
+							"emoji": true
+						},
+						"value": action.name
+					}
+				}),
+				"action_id": INIT_ACTION_ID
+			}
 		}
-	}
-]
+	]
+	if (defaultAction === undefined) return actionsBlocks
+	const blocks = await defaultAction.run(userId, channelId, channelType)
+	return [{
+		"type": "header",
+		"text": {
+			"type": "plain_text",
+			"text": `Default Action: ${defaultAction.name}`,
+			"emoji": true
+		}
+	}, ...blocks, ...actionsBlocks]
+}
 
 const app = new Elysia()
 app.get("/", () => "Hello Elysia")
@@ -45,16 +58,17 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 	}
 	else if (body.event && body.event.type === "app_home_opened") {
 		console.log("APP HOME OPENED", body)
-		await publishHomeTab(body.event.user, actionsBlocks, "Barbell cURL");
+		const initBlocks = await renderInitActionsBlocks(body.event.user, 'home', 'home')
+		await publishHomeTab(body.event.user, initBlocks, bot.getDefaultAction()?.name || INIT_MODAL_NAME);
 	}
-
 	else if (body.payload) {
 		console.log("Body", body)
 		const payload = JSON.parse(body.payload)
 		console.log("Slash Command Payload", payload)
 		if (payload.type === "shortcut") {
 			const shortcutPayload = payload as ShortcutPayload
-			await openModal(shortcutPayload.trigger_id, actionsBlocks, INIT_MODAL_NAME)
+			const initBlocks = await renderInitActionsBlocks(shortcutPayload.user.id, 'modal', 'modal')
+			await openModal(shortcutPayload.trigger_id, initBlocks, bot.getDefaultAction()?.name || INIT_MODAL_NAME)
 		}
 		else if (payload.type === "block_actions") {
 			const blockActionsPayload = payload as BlockActionsPayload
@@ -69,7 +83,7 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 					const action = bot.getAction(actionName)
 					if (action === undefined) throw new Error("Action not found")
 					// inputs is a list of {key: object} -> flatten this into one object
-					const flattenedInputs = inputs.reduce((acc, input) => {
+					const flattenedInputs = inputs.filter(input => Object.keys(input)[0] !== INIT_ACTION_ID).reduce((acc, input) => {
 						const key = Object.keys(input)[0];
 						acc[key] = input[key];
 						return acc;
