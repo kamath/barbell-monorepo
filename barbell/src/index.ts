@@ -28,9 +28,7 @@ bot.defineDefaultAction(openGarageAction)
 const bookConferenceRoomAction = new Action({
 	name: "[WIP] Book Conference Room",
 	handler: async ({ io }) => {
-		const name = await io.input.text("Enter the event name")
-		const date = await io.input.date("Enter the date of the event")
-		await io.output.markdown(`Booking ${name} for ${date}`)
+		await io.output.markdown(`*Booking a conference room is under construction, coming soon!*`)
 	}
 })
 bot.defineAction(bookConferenceRoomAction)
