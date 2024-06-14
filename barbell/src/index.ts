@@ -6,6 +6,11 @@ const newUserAction = new Action({
 	handler: async (io) => {
 		const fname = await io.input.text("Enter your first name")
 		const lname = await io.input.text(`Hi, ${fname}! Enter your last name`)
+		const favorite_colors = await io.input.multiSelect("Favorite Colors", [
+			{ name: "Red", value: "red" },
+			{ name: "Green", value: "green" },
+			{ name: "Blue", value: "blue" }
+		])
 		await io.output.markdown(`Welcome to Barbell, ${fname} ${lname}!`)
 		const dob = await io.input.date("Enter your DOB")
 		const age = new Date().getFullYear() - new Date(dob).getFullYear()
@@ -17,8 +22,8 @@ const newUserAction = new Action({
 			await io.output.markdown('You are too young to use this service')
 		}
 	}
-})
-bot.defineAction(newUserAction)
+});
+bot.defineAction(newUserAction);
 
 const openGarageAction = new Action({
 	name: "Open Garage",
@@ -32,7 +37,7 @@ const openGarageAction = new Action({
 			}
 		}, 'primary')
 	}
-})
-bot.defineAction(openGarageAction)
+});
+bot.defineAction(openGarageAction);
 
 export default bot

@@ -36,7 +36,10 @@ abstract class Input extends InputOutput {
 			return new DateInput(name, state.selected_date)
 		}
 		if(state.type === "multi_static_select") {
-			return new MultiSelectInput(name, state.selected_options.map((option: { value: string }) => option.value))
+			return new MultiSelectInput(name, state.selected_options.map((option: { text: { text: string }, value: string }) => ({
+				name: option.text.text,
+				value: option.value
+			})))
 		}
 		throw new Error(`Unknown input type: ${state.type}`)
 	}
@@ -184,8 +187,11 @@ class MultiSelectInput extends Input {
 		]
 	}
     async getValue() {
-		this.ensureValue()
-		return this.value as (string | number | boolean)[]
+		//this.ensureValue()
+		console.log("Sdfsdf")
+		// our options are stored in option.value as [ "red", "green" ]
+		// we want to return ["red", "green"]
+		return this.options.map(option => option.value)
 	}
 }
 
@@ -336,8 +342,14 @@ export class Action {
 	async run(inputs?: Record<string, { type: string, [key: string]: any }> | undefined, buttonClick?: { action: string, value: string } | undefined) {
 		const actionRunner = new ActionRunner({ name: this.name, handler: this.handler }) // Allow everything to be stateless server-side
 		if (inputs) {
-			const definedInputs = Array.from(Object.keys(inputs)).map(key => ({ [key]: Input.fromSlackState(key, inputs[key]) })).reduce((acc, input) => ({ ...acc, ...input }), {})
-			console.log("PREDEFINED INPUTS", definedInputs)
+			// This code is transforming the 'inputs' object into a new object called 'definedInputs'.
+			// It first extracts the keys from the 'inputs' object and maps each key to a new object where the key is the same and the value is the result of calling 'Input.fromSlackState' with the key and the corresponding value from 'inputs'.
+			// Then, it reduces the array of these new objects into a single object by merging them together.
+			const definedInputs = Object.keys(inputs).reduce((acc, key) => {
+				acc[key] = Input.fromSlackState(key, inputs[key]);
+				return acc;
+			}, {});
+			console.log("PREDEFINED INPUTS", definedInputs);
 			return await actionRunner.run(definedInputs, buttonClick)
 		}
 		return await actionRunner.run(undefined, buttonClick)

@@ -116,9 +116,6 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 					}
 					return
 				}
-			
-
-
 		 }
 
 
