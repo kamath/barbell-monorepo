@@ -21,6 +21,7 @@ model Environment {
     GarageLastOpened GarageLastOpened[]
     GateLastOpened   GateLastOpened[]
     EndpointHit      EndpointHit[]
+    EventLog         EventLog[]
 }
 
 model GarageLastOpened {
@@ -41,12 +42,30 @@ model GateLastOpened {
     environmentId String      @default("PROD")
 }
 
+// DEPRECATED: only kept here for old data. DO NOT USE
 model EndpointHit {
     id            String      @id @default(uuid())
     createdAt     DateTime    @default(now())
     updatedAt     DateTime    @updatedAt
     endpoint      String
     body          String
+    environment   Environment @relation(fields: [environmentId], references: [name])
+    environmentId String      @default("PROD")
+}
+
+model Event {
+    id       String     @id @default(uuid())
+    name     String
+    EventLog EventLog[]
+}
+
+model EventLog {
+    id            String      @id @default(uuid())
+    createdAt     DateTime    @default(now())
+    updatedAt     DateTime    @updatedAt
+    event         Event       @relation(fields: [eventId], references: [id])
+    eventId       String
+    metadata      Json
     environment   Environment @relation(fields: [environmentId], references: [name])
     environmentId String      @default("PROD")
 }
