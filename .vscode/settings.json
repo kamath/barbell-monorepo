@@ -1,0 +1,5 @@
+{
+    "[typescript]": {
+        "prettier.printWidth": 110
+    }
+}
