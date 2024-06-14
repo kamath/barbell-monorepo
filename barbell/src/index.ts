@@ -1,9 +1,11 @@
 import Bot, { Action } from "./barbell/bot";
+import { sendMessage } from "./barbell/utils/slack";
+import { ALERTS_CHANNEL_ID } from "./consts";
 
 const bot = new Bot()
 const newUserAction = new Action({
 	name: "New User",
-	handler: async (io) => {
+	handler: async ({ io }) => {
 		const fname = await io.input.text("Enter your first name")
 		const lname = await io.input.text(`Hi, ${fname}! Enter your last name`)
 		await io.output.markdown(`Welcome to Barbell, ${fname} ${lname}!`)
@@ -22,8 +24,8 @@ bot.defineAction(newUserAction)
 
 const openGarageAction = new Action({
 	name: "Open Garage",
-	handler: async (io) => {
-		await io.output.markdown("Opening garage...")
+	handler: async ({ io, userId, channelId, channelType }) => {
+		await io.output.markdown(`Opening garage... ${userId} ${channelId} ${channelType}`)
 		await io.input.button("Open", async () => {
 			if (Math.random() > 0.5) {
 				await io.output.markdown("Garage opened!")
@@ -31,6 +33,13 @@ const openGarageAction = new Action({
 				await io.output.markdown("Garage failed to open!")
 			}
 		}, 'primary')
+		await sendMessage([{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Test"
+			}
+		}], ALERTS_CHANNEL_ID)
 	}
 })
 bot.defineAction(openGarageAction)

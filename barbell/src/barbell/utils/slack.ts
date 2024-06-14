@@ -72,3 +72,18 @@ export const publishHomeTab = async (user_id: string, blocks: Block[], title: st
 	console.log("Published home tab", blocks);
 	return { status: 200 };
 }
+
+// TODO: Take in InputOutput type instead of Slack blocks
+export const sendMessage = async (blocks: (Block | KnownBlock)[], channel: string, thread_ts?: string, reply_broadcast: boolean = true) => {
+	await client.chat.postMessage({
+		channel: channel,
+		blocks: blocks,
+		...(thread_ts ? { thread_ts: thread_ts } : {}),
+		...(reply_broadcast ? { reply_broadcast: true } : {})
+	} as ChatPostMessageArguments);
+};
+
+export const readChannelMembers = async (channel: string) => {
+	const members = await client.conversations.members({ channel });
+	return members.members;
+}

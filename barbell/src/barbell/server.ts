@@ -6,6 +6,7 @@ import bot from "..";
 import { INIT_ACTION_ID, INIT_MODAL_NAME } from "./consts";
 import { Action } from "./bot";
 import { HeaderBlock } from "@slack/web-api";
+import { ChannelType } from "./types/handlerInputs";
 
 const actionsBlocks = [
 	{
@@ -79,7 +80,7 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 						value: action.value
 					}))?.[0];
 					console.log("BUTTON CLICK", buttonClick)
-					const blocks = await action.run(flattenedInputs, buttonClick)
+					const blocks = await action.run(blockActionsPayload.user.id, blockActionsPayload.view.type, blockActionsPayload.view.type as ChannelType, flattenedInputs, buttonClick)
 					console.log("RENDERING BLOCKS", blocks)
 					if (blockActionsPayload.view.type === 'modal') {
 						await updateModal(blockActionsPayload.view.id, blocks, action.name, "Submit")
@@ -93,7 +94,7 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
 			else {
 				const intendedAction = getActionValue(actionInput)
 				const action = bot.getAction(intendedAction)
-				const blocks = await action.run()
+				const blocks = await action.run(blockActionsPayload.user.id, blockActionsPayload.view.type, blockActionsPayload.view.type as ChannelType)
 				if (blockActionsPayload.view.type === 'modal') {
 					await updateModal(blockActionsPayload.view.id, blocks, action.name, "Submit")
 				}
