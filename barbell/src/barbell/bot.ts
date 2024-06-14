@@ -8,12 +8,12 @@ abstract class InputOutput {
 }
 
 abstract class Input extends InputOutput {
-    public value: string | number | boolean | (string | number | boolean)[] | undefined
-    constructor(readonly name: string, value?: string | number | boolean | (string | number | boolean)[]) {
+    public value: string | number | boolean | (string | number | boolean | object)[] | undefined
+    constructor(readonly name: string, value?: string | number | boolean | (string | number | boolean | any)[]) {
 		super(name)
 		this.value = value
 	}
-	setValue(value: string | number | boolean) {
+	setValue(value: string | number | boolean | (string | number | boolean | object | any)[]) {
 		this.value = value
 	}
 	ensureValue() {
@@ -36,7 +36,13 @@ abstract class Input extends InputOutput {
 			return new DateInput(name, state.selected_date)
 		}
 		if(state.type === "multi_static_select") {
-			return new MultiSelectInput(name, state.selected_options.map((option: { text: { text: string }, value: string }) => ({
+			// TODO: Fix.
+			// return new MultiSelectInput(name, state.selected_options.map((option: { text: { text: string }, value: string }) => ({
+			// 	name: option.text.text,
+			// 	value: option.value
+			// })))
+			console.log("THE OPTIONS ARE BEING SHOWN BELIOW: ", state)
+			return new MultiSelectInput(name, state.options, state.selected_options.map((option: { text: { text: string }, value: string }) => ({
 				name: option.text.text,
 				value: option.value
 			})))
@@ -148,7 +154,7 @@ class ButtonInput extends Input {
 class MultiSelectInput extends Input {
 	private options: { name: string, value: string | number | boolean }[]
 
-	constructor(name: string, options: { name: string, value: string | number | boolean }[] = [], value?: (string | number | boolean)[]) {
+	constructor(name: string, options: { name: string, value: string | number | boolean }[] = [], value?: { name: string, value: string | number | boolean }[]) {
 		super(name, value)
 		this.options = options
 	}
@@ -169,7 +175,7 @@ class MultiSelectInput extends Input {
 						},
 						"value": option.value.toString()
 					})),
-					...(this.value ? { "initial_options": (this.value as string[]).map(value => ({
+					...(this.value ? { "initial_options": (this.value as any[]).map(value => ({
 						"text": {
 							"type": "plain_text",
 							"text": this.options.find(option => option.value === value)?.name || "",
@@ -187,11 +193,13 @@ class MultiSelectInput extends Input {
 		]
 	}
     async getValue() {
-		//this.ensureValue()
-		console.log("Sdfsdf")
-		// our options are stored in option.value as [ "red", "green" ]
-		// we want to return ["red", "green"]
-		return this.options.map(option => option.value)
+		this.ensureValue()
+		//						return new MultiSelectInput(name, state.selected_options.map((option: { text: { text: string }, value: string }) => ({
+		// 	name: option.text.text,
+		// 	value: option.value
+		// })))
+		return this.options.filter(option => (this.value as any[]).includes(option.value)).map(option => option.value)
+		//return this.options.map(option => option.value).filter((value, index, self) => self.indexOf(value) === index)
 	}
 }
 
@@ -231,7 +239,7 @@ type IO = {
 		text: (name: string) => Promise<string>
 		date: (name: string) => Promise<string>
 		button: (name: string, onClick: () => Promise<void>, style?: 'default' | 'primary' | 'danger') => Promise<void>
-		multiSelect: (name: string, value: { name: string, value: string | number | boolean }[]) => Promise<(string | number | boolean)[]>
+		multiSelect: (name: string, options: { name: string, value: string | number | boolean }[], value: { name: string, value: string | number | boolean }[]) => Promise<(string | number | boolean)[]>
 	}
 	output: {
 		markdown: (value: string) => Promise<MarkdownOutput>
@@ -274,14 +282,15 @@ class ActionRunner {
 					this.inputoutputs.push(input)
 					throw new BarbellIOError(`Input ${name} is not set`);
 				},
-				multiSelect: async (name: string, value: { name: string, value: string | number | boolean }[]): Promise<(string | number | boolean)[]> => {
+				multiSelect: async (name: string, options: { name: string, value: string | number | boolean }[], value: { name: string, value: string | number | boolean }[]): Promise<(string | number | boolean)[]> => {
 					console.log("ADDING MULTISELECT INPUT", name)
 					if (this.state[name]) {
 						const input = this.state[name] as MultiSelectInput
+						console.log("WEEWOO INPUT: ", input)
 						this.inputoutputs.push(input)
 						return input.getValue()
 					}
-					const input = new MultiSelectInput(name, value)
+					const input = new MultiSelectInput(name, options,value)
 					this.inputoutputs.push(input)
 					throw new BarbellIOError(`Input ${name} is not set`)
 				},
@@ -342,14 +351,8 @@ export class Action {
 	async run(inputs?: Record<string, { type: string, [key: string]: any }> | undefined, buttonClick?: { action: string, value: string } | undefined) {
 		const actionRunner = new ActionRunner({ name: this.name, handler: this.handler }) // Allow everything to be stateless server-side
 		if (inputs) {
-			// This code is transforming the 'inputs' object into a new object called 'definedInputs'.
-			// It first extracts the keys from the 'inputs' object and maps each key to a new object where the key is the same and the value is the result of calling 'Input.fromSlackState' with the key and the corresponding value from 'inputs'.
-			// Then, it reduces the array of these new objects into a single object by merging them together.
-			const definedInputs = Object.keys(inputs).reduce((acc, key) => {
-				acc[key] = Input.fromSlackState(key, inputs[key]);
-				return acc;
-			}, {});
-			console.log("PREDEFINED INPUTS", definedInputs);
+			const definedInputs = Array.from(Object.keys(inputs)).map(key => ({ [key]: Input.fromSlackState(key, inputs[key]) })).reduce((acc, input) => ({ ...acc, ...input }), {})
+			console.log("PREDEFINED INPUTS", definedInputs)
 			return await actionRunner.run(definedInputs, buttonClick)
 		}
 		return await actionRunner.run(undefined, buttonClick)
