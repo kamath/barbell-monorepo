@@ -1,6 +1,7 @@
 import { Block } from "@slack/web-api"
 import { BarbellIOError } from "./types/ioError"
 import { INIT_MODAL_NAME } from "./consts"
+import { ChannelType, HandlerInput, IO } from "./types/handlerInputs"
 
 abstract class InputOutput {
 	constructor(readonly name: string) { }
@@ -8,8 +9,8 @@ abstract class InputOutput {
 }
 
 abstract class Input extends InputOutput {
-    public value: string | number | boolean | (string | number | boolean)[] | undefined
-    constructor(readonly name: string, value?: string | number | boolean | (string | number | boolean)[]) {
+	public value: string | number | boolean | (string | number | boolean)[] | undefined
+	constructor(readonly name: string, value?: string | number | boolean | (string | number | boolean)[]) {
 		super(name)
 		this.value = value
 	}
@@ -35,7 +36,7 @@ abstract class Input extends InputOutput {
 		if (state.type === "datepicker") {
 			return new DateInput(name, state.selected_date)
 		}
-		if(state.type === "multi_static_select") {
+		if (state.type === "multi_static_select") {
 			return new MultiSelectInput(name, state.selected_options.map((option: { value: string }) => option.value))
 		}
 		throw new Error(`Unknown input type: ${state.type}`)
@@ -166,14 +167,16 @@ class MultiSelectInput extends Input {
 						},
 						"value": option.value.toString()
 					})),
-					...(this.value ? { "initial_options": (this.value as string[]).map(value => ({
-						"text": {
-							"type": "plain_text",
-							"text": this.options.find(option => option.value === value)?.name || "",
-							"emoji": true
-						},
-						"value": value.toString()
-					})) } : {})
+					...(this.value ? {
+						"initial_options": (this.value as string[]).map(value => ({
+							"text": {
+								"type": "plain_text",
+								"text": this.options.find(option => option.value === value)?.name || "",
+								"emoji": true
+							},
+							"value": value.toString()
+						}))
+					} : {})
 				},
 				"label": {
 					"type": "plain_text",
@@ -183,7 +186,7 @@ class MultiSelectInput extends Input {
 			}
 		]
 	}
-    async getValue() {
+	async getValue() {
 		this.ensureValue()
 		return this.value as (string | number | boolean)[]
 	}
@@ -218,28 +221,14 @@ class MarkdownOutput extends Output {
 	}
 }
 
-
-
-type IO = {
-	input: {
-		text: (name: string) => Promise<string>
-		date: (name: string) => Promise<string>
-		button: (name: string, onClick: () => Promise<void>, style?: 'default' | 'primary' | 'danger') => Promise<void>
-		multiSelect: (name: string, value: { name: string, value: string | number | boolean }[]) => Promise<(string | number | boolean)[]>
-	}
-	output: {
-		markdown: (value: string) => Promise<MarkdownOutput>
-	}
-}
-
 class ActionRunner {
 	readonly io: IO
 	private state: Record<string, Input> = {}
 	private inputoutputs: InputOutput[] = []
 	readonly name: string
-	readonly handler: (io: IO) => Promise<void>
+	readonly handler: (handlerInputs: HandlerInput) => Promise<void>
 
-	constructor({ name, handler }: { name: string, handler: (io: IO) => Promise<void> }) {
+	constructor({ name, handler }: { name: string, handler: (handlerInputs: HandlerInput) => Promise<void> }) {
 		if (name === INIT_MODAL_NAME) {
 			throw new Error("Action name cannot be the same as the initial modal name")
 		}
@@ -298,12 +287,12 @@ class ActionRunner {
 		this.handler = handler
 	}
 
-	public async run(inputs?: Record<string, Input> | undefined, buttonClick?: { action: string, value: string } | undefined): Promise<Block[]> {
+	public async run(userId: string, channelId: string, channelType: ChannelType, inputs?: Record<string, Input> | undefined, buttonClick?: { action: string, value: string } | undefined): Promise<Block[]> {
 		console.log("INPUTS", this.inputoutputs)
 		if (inputs) {
 			this.state = inputs
 		}
-		await this.handler(this.io).catch(async e => {
+		await this.handler({ io: this.io, userId: userId, channelId: channelId, channelType: channelType }).catch(async e => {
 			if (e instanceof BarbellIOError) {
 				console.error("BarbellIOError:", e.message);
 			} else {
@@ -327,20 +316,20 @@ class ActionRunner {
 
 export class Action {
 	readonly name: string
-	readonly handler: (io: IO) => Promise<void>
+	readonly handler: (handlerInputs: HandlerInput) => Promise<void>
 
-	constructor({ name, handler }: { name: string, handler: (io: IO) => Promise<void> }) {
+	constructor({ name, handler }: { name: string, handler: (handlerInputs: HandlerInput) => Promise<void> }) {
 		this.name = name
 		this.handler = handler
 	}
-	async run(inputs?: Record<string, { type: string, [key: string]: any }> | undefined, buttonClick?: { action: string, value: string } | undefined) {
+	async run(userId: string, channelId: string, channelType: ChannelType, inputs?: Record<string, { type: string, [key: string]: any }> | undefined, buttonClick?: { action: string, value: string } | undefined) {
 		const actionRunner = new ActionRunner({ name: this.name, handler: this.handler }) // Allow everything to be stateless server-side
 		if (inputs) {
 			const definedInputs = Array.from(Object.keys(inputs)).map(key => ({ [key]: Input.fromSlackState(key, inputs[key]) })).reduce((acc, input) => ({ ...acc, ...input }), {})
 			console.log("PREDEFINED INPUTS", definedInputs)
-			return await actionRunner.run(definedInputs, buttonClick)
+			return await actionRunner.run(userId, channelId, channelType, definedInputs, buttonClick)
 		}
-		return await actionRunner.run(undefined, buttonClick)
+		return await actionRunner.run(userId, channelId, channelType, undefined, buttonClick)
 	}
 }
 

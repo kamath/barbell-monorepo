@@ -1,0 +1,1 @@
+export const ALERTS_CHANNEL_ID = process.env.ALERTS_CHANNEL_ID || ""
