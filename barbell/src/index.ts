@@ -8,7 +8,7 @@ const bot = new Bot()
 
 const openGarageAction = new Action({
 	name: "Open Parking Garage",
-	handler: async ({ io, userId }) => {
+	handler: async ({ io, userId, channelId, channelType }) => {
 		await io.input.button("Open Mission St. Garage", async () => {
 			await openGarage(io, prisma, userId)
 		}, 'primary')
