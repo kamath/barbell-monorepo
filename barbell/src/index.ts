@@ -1,6 +1,8 @@
 import Bot, { Action } from "./barbell/bot";
+import { IO } from "./barbell/types/handlerInputs";
 import { sendMessage } from "./barbell/utils/slack";
-import { ALERTS_CHANNEL_ID } from "./consts";
+import { askForHelp, openGarage, openGate } from "./utils/openGarage";
+import { prisma } from "./utils/prisma";
 
 const bot = new Bot()
 const newUserAction = new Action({
@@ -23,25 +25,37 @@ const newUserAction = new Action({
 bot.defineAction(newUserAction)
 
 const openGarageAction = new Action({
-	name: "Open Garage",
-	handler: async ({ io, userId, channelId, channelType }) => {
-		await io.output.markdown(`Opening garage... ${userId} ${channelId} ${channelType}`)
-		await io.input.button("Open", async () => {
-			if (Math.random() > 0.5) {
-				await io.output.markdown("Garage opened!")
-			} else {
-				await io.output.markdown("Garage failed to open!")
-			}
+	name: "Open Parking Garage",
+	handler: async ({ io, userId }) => {
+		await io.input.button("Open Mission St. Garage", async () => {
+			await openGarage(io, prisma, userId)
 		}, 'primary')
-		await sendMessage([{
-			"type": "section",
-			"text": {
-				"type": "mrkdwn",
-				"text": "Test"
-			}
-		}], ALERTS_CHANNEL_ID)
+
+		await io.input.button("Open Otis Garage", async () => {
+			await openGate(io, prisma, userId)
+		}, 'primary')
+
+		await io.input.button("Ask for Help", async () => {
+			await askForHelp(io, userId)
+		}, 'danger')
 	}
 })
 bot.defineAction(openGarageAction)
+
+async function testIO(io: IO) {
+	await io.output.markdown("should also show")
+}
+
+const testButtonClickAction = new Action({
+	name: "Test Button Click",
+	handler: async ({ io }) => {
+		await io.input.button("Test IO", async () => {
+			await io.output.markdown("should show")
+			await testIO(io)
+			await io.output.markdown("should also also show")
+		}, 'danger')
+	}
+})
+bot.defineAction(testButtonClickAction)
 
 export default bot
