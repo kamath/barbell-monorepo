@@ -23,11 +23,7 @@ app.post("/slack/events", async ({ body }: { body: any }) => {
   if (body.challenge) {
     return body.challenge;
   } else if (body.payload) {
-
-    console.log("Body", body);
     const payload: SlackPayload = JSON.parse(body.payload);
-    console.log("Slash Command Payload", payload);
-
     switch (payload.type) {
 
       case "shortcut":
