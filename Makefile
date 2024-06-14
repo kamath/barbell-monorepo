@@ -1,12 +1,13 @@
 include .env
 
 DEFAULT_AWS_REGION=us-east-1
-PROJECT=main
+PROJECT=main-backend
+PROJECT_PATH=barbell
 DOCKERFILE_PATH=solaris-barbell
 
-BACKEND_AWS_ECR_REPO=${PROJECT}-backend-ecr-repo
-ECS_CLUSTER=${PROJECT}-backend-ecs-cluster
-ECS_SERVICE=${PROJECT}-backend-service
+BACKEND_AWS_ECR_REPO=${PROJECT}-ecr-repo
+ECS_CLUSTER=${PROJECT}-ecs-cluster
+ECS_SERVICE=${PROJECT}-service
 
 init:
 	cd iac && terraform init
