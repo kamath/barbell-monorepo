@@ -1,4 +1,5 @@
 import Bot, { Action } from "./barbell/bot";
+import { sendMessage } from "./barbell/utils/slack";
 import { bookRoom, getAvailableRooms } from "./utils/bookings";
 import { askForHelp, openGarage, openGate } from "./utils/openGarage";
 import { prisma } from "./utils/prisma";
@@ -26,7 +27,7 @@ bot.defineDefaultAction(openGarageAction)
 
 const bookConferenceRoomAction = new Action({
 	name: "Book Conference Room",
-	handler: async ({ io }) => {
+	handler: async ({ io, userId }) => {
 		await io.output.markdown(`*Booking a conference room is under construction, coming soon!*`)
 		const startDate = await io.input.date("Date").then((date) => {
 			const [year, month, day] = date.split('-').map(Number);
@@ -57,6 +58,23 @@ const bookConferenceRoomAction = new Action({
 		await io.input.button("Book Room", async () => {
 			await bookRoom(room.value, startDate, startTime, endTime)
 			await io.output.markdown(`*Room booked successfully!*`)
+			await sendMessage([
+				{
+					"type": "header",
+					"text": {
+						"type": "plain_text",
+						"text": "Conference Room Booking Confirmation",
+						"emoji": true
+					}
+				},
+				{
+					"type": "section",
+					"text": {
+						"type": "mrkdwn",
+						"text": `You have booked *${room.name}* on ${startDate.toLocaleDateString()} from ${startTime} to ${endTime}`
+					}
+				}
+			], `${userId}`)
 		}, 'primary')
 	}
 })
