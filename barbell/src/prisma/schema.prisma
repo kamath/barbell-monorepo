@@ -50,3 +50,21 @@ model EndpointHit {
     environment   Environment @relation(fields: [environmentId], references: [name])
     environmentId String      @default("PROD")
 }
+
+model ConferenceRoom {
+    id        String    @id @default(uuid())
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    name      String
+    bookings  Booking[]
+}
+
+model Booking {
+    id               String          @id @default(uuid())
+    createdAt        DateTime        @default(now())
+    updatedAt        DateTime        @updatedAt
+    startDate        DateTime
+    endDate          DateTime
+    conferenceRoom   ConferenceRoom? @relation(fields: [conferenceRoomId], references: [id])
+    conferenceRoomId String?
+}

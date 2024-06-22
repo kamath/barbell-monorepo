@@ -1,6 +1,5 @@
 import Bot, { Action } from "./barbell/bot";
-import { IO } from "./barbell/types/handlerInputs";
-import { sendMessage } from "./barbell/utils/slack";
+import { bookRoom, getAvailableRooms } from "./utils/bookings";
 import { askForHelp, openGarage, openGate } from "./utils/openGarage";
 import { prisma } from "./utils/prisma";
 
@@ -29,6 +28,36 @@ const bookConferenceRoomAction = new Action({
 	name: "Book Conference Room",
 	handler: async ({ io }) => {
 		await io.output.markdown(`*Booking a conference room is under construction, coming soon!*`)
+		const startDate = await io.input.date("Date").then((date) => {
+			const [year, month, day] = date.split('-').map(Number);
+			console.log("DATE", year, month, day)
+			return new Date(year, month - 1, day);
+		});
+		const currentDate = new Date();
+		if (startDate < currentDate) {
+			await io.output.markdown(`*Please enter a date in the future.*`)
+			return
+		}
+
+		const startTime = await io.input.time("Start Time")
+		const endTime = await io.input.time("End Time")
+		if (startTime > endTime) {
+			await io.output.markdown(`*Please ensure the start time is before the end time.*`)
+			return
+		}
+		await io.output.markdown(`*Start Time: ${startTime}, End Time: ${endTime}*`)
+		const availableRooms = await getAvailableRooms(startDate, startTime, endTime)
+		await io.output.markdown(`*Available Rooms: ${availableRooms.map(room => room.name).join(', ')}*`)
+		const room = await io.input.dropdown("Select Room", availableRooms.map(room => ({
+			name: room.name,
+			value: room.id
+		})))
+		console.log("GOT ROOM", room)
+		await io.output.markdown(`*Room: ${room.name}, ${room.value}*`)
+		await io.input.button("Book Room", async () => {
+			await bookRoom(room.value, startDate, startTime, endTime)
+			await io.output.markdown(`*Room booked successfully!*`)
+		}, 'primary')
 	}
 })
 bot.defineAction(bookConferenceRoomAction)

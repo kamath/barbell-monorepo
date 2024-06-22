@@ -22,7 +22,7 @@ abstract class Input extends InputOutput {
 			throw new BarbellIOError(`Value for ${this.name} is not set`)
 		}
 	}
-	abstract getValue(): Promise<string | number | boolean | (string | number | boolean)[]>
+	abstract getValue(): Promise<string | number | boolean | Date | (string | number | boolean | Date)[] | { name: string, value: string }>
 
 	//abstract getValue(): string | number | boolean | (string | number | boolean)[]
 	abstract render(): Block[]
@@ -35,6 +35,16 @@ abstract class Input extends InputOutput {
 		}
 		if (state.type === "datepicker") {
 			return new DateInput(name, state.selected_date)
+		}
+		if (state.type === "timepicker") {
+			return new TimeInput(name, state.selected_time)
+		}
+		if (state.type === "static_select") {
+			console.log("GOT DROPDOWN STATE", state)
+			return new DropdownInput(name, [{
+				name: state.selected_option?.text?.text,
+				value: state.selected_option?.value
+			}], state.selected_option?.value)
 		}
 		if (state.type === "multi_static_select") {
 			return new MultiSelectInput(name, state.selected_options.map((option: { value: string }) => option.value))
@@ -109,6 +119,36 @@ class DateInput extends Input {
 	}
 }
 
+class TimeInput extends Input {
+	constructor(name: string, value?: string | undefined) {
+		super(name, value)
+	}
+	render() {
+		return [
+			{
+				"type": "actions",
+				"elements": [
+					{
+						"type": "timepicker",
+						...(this.value ? { "initial_time": this.value } : {}),
+						"placeholder": {
+							"type": "plain_text",
+							"text": this.name,
+							"emoji": true
+						},
+						"action_id": this.name
+					}
+				]
+			}
+		]
+	}
+	async getValue() {
+		this.ensureValue()
+		return this.value as string
+	}
+}
+
+
 class ButtonInput extends Input {
 	private readonly onClick: () => Promise<void>
 	private readonly style: 'default' | 'primary' | 'danger'
@@ -140,6 +180,64 @@ class ButtonInput extends Input {
 	async getValue() {
 		await this.onClick()
 		return true
+	}
+}
+
+class DropdownInput extends Input {
+	protected readonly options: { name: string, value: string }[]
+
+	constructor(name: string, options: { name: string, value: string }[] = [], value?: string) {
+		super(name, value)
+		this.options = options
+	}
+
+	render() {
+		console.log("RENDERING DROPDOWN", this.options, this.value)
+		return [
+			{
+				"type": "section",
+				"text": {
+					"type": "mrkdwn",
+					"text": this.name
+				},
+				"accessory": {
+					"type": "static_select",
+					"placeholder": {
+						"type": "plain_text",
+						"text": this.name,
+						"emoji": true
+					},
+					"options": this.options.map(option => {
+						return {
+							"text": {
+								"type": "plain_text",
+								"text": option.name,
+								"emoji": true
+							},
+							"value": option.value
+						}
+					}),
+					...(this.value ? {
+						"initial_option": {
+							"text": {
+								"type": "plain_text",
+								"text": this.options.find(option => option.value === this.value)?.name,
+								"emoji": true
+							},
+							"value": this.value.toString()
+						}
+					} : {}),
+					"action_id": this.name
+				}
+			}
+		]
+	}
+	async getValue() {
+		this.ensureValue()
+		return {
+			name: this.options.find(option => option.value === this.value)?.name,
+			value: this.value
+		} as { name: string, value: string }
 	}
 }
 
@@ -253,6 +351,28 @@ class ActionRunner {
 					const input = new DateInput(name)
 					this.inputoutputs.push(input)
 					throw new BarbellIOError(`Input ${name} is not set`);
+				},
+				time: async (name: string): Promise<string> => {
+					console.log("ADDING TIME INPUT", name)
+					if (this.state[name]) {
+						const input = this.state[name] as TimeInput
+						this.inputoutputs.push(input)
+						return input.getValue()
+					}
+					const input = new TimeInput(name)
+					this.inputoutputs.push(input)
+					throw new BarbellIOError(`Input ${name} is not set`);
+				},
+				dropdown: async (name: string, options: { name: string, value: string }[]): Promise<{ name: string, value: string }> => {
+					console.log("ADDING DROPDOWN INPUT", name)
+					if (this.state[name]) {
+						const input = this.state[name] as DropdownInput
+						this.inputoutputs.push(input)
+						return input.getValue()
+					}
+					const input = new DropdownInput(name, options)
+					this.inputoutputs.push(input)
+					throw new BarbellIOError(`Input ${name} is not set`)
 				},
 				multiSelect: async (name: string, value: { name: string, value: string | number | boolean }[]): Promise<(string | number | boolean)[]> => {
 					console.log("ADDING MULTISELECT INPUT", name)
