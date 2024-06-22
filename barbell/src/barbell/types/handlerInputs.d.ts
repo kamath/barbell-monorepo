@@ -4,8 +4,10 @@ export type IO = {
 	input: {
 		text: (name: string) => Promise<string>
 		date: (name: string) => Promise<string>
+		time: (name: string) => Promise<string>
 		button: (name: string, onClick: () => Promise<void>, style?: 'default' | 'primary' | 'danger') => Promise<void>
 		multiSelect: (name: string, value: { name: string, value: string | number | boolean }[]) => Promise<(string | number | boolean)[]>
+		dropdown: (name: string, options: { name: string, value: string }[]) => Promise<{ name: string, value: string }>
 	}
 	output: {
 		markdown: (value: string) => Promise<MarkdownOutput>
