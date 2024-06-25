@@ -3,7 +3,7 @@ include .env
 DEFAULT_AWS_REGION=us-east-1
 PROJECT=main-backend
 PROJECT_PATH=barbell
-DOCKERFILE_PATH=solaris-barbell
+DOCKERFILE_PATH=barbell
 
 BACKEND_AWS_ECR_REPO=${PROJECT}-ecr-repo
 ECS_CLUSTER=${PROJECT}-ecs-cluster
@@ -20,7 +20,7 @@ apply: init
 	cd iac && terraform output -raw ecs_task_definition_json > task_definition.json
 
 run:
-	cd barbell && bun run dev
+	cd ${PROJECT_PATH} && bun run dev
 	
 run-ngrok:
 	ngrok http --domain=${NGROK_URL} 3000
@@ -36,4 +36,5 @@ deploy-ecr: build
 deploy: deploy-ecr
 	aws ecs update-service --cluster ${ECS_CLUSTER} --service ${ECS_SERVICE} --force-new-deployment --region ${DEFAULT_AWS_REGION}
 
-	
+run-docker: build
+	docker run -d -p 3000:3000 ${BACKEND_AWS_ECR_REPO}
