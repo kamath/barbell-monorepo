@@ -3,7 +3,7 @@ import { ShortcutPayload } from "./types/slashCommandPayload";
 import { getActionValue, openModal, publishHomeTab, updateModal } from "./utils/slack";
 import { BlockActionsPayload } from "./types/slackEvent";
 import bot from "..";
-import { INIT_ACTION_ID, INIT_MODAL_NAME } from "./consts";
+import { ENVIRONMENT, INIT_ACTION_ID, INIT_MODAL_NAME } from "./consts";
 import { Action } from "./bot";
 import { HeaderBlock } from "@slack/web-api";
 import { ChannelType } from "./types/handlerInputs";
@@ -51,7 +51,7 @@ const renderInitActionsBlocks = async (userId: string, channelId: string, channe
 }
 
 const app = new Elysia()
-app.get("/", () => "Hello Elysia")
+app.get("/", () => { return { status: 200, ENVIRONMENT }; })
 app.post("/slack/events", async ({ body }: { body: any }) => {
 	if (body.challenge) {
 		return body.challenge;

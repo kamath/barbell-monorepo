@@ -44,6 +44,47 @@ export async function openGarage(io: IO, prisma: PrismaClient, userId: string) {
 	}
 }
 
+export async function openGarageBackup(io: IO, prisma: PrismaClient, userId: string) {
+	console.log("Opening Garage")
+
+	const members = await readChannelMembers(PARKING_CHANNEL_ID)
+	if (!members?.includes(userId)) {
+		console.error("User not in parking channel for garage: ", userId, members)
+		await io.output.markdown(`You are not in the approved users to park in Solaris parking; if this is an error please contact <@${JACOB_SLACK_ID}>`)
+		return
+	}
+
+	const lastOpened = await prisma.garageLastOpened.findFirst({
+		orderBy: {
+			createdAt: 'desc'
+		}
+	})
+	console.log("Last Opened: ", lastOpened)
+	if (lastOpened && lastOpened.createdAt.getTime() > Date.now() - 1000 * 10) {
+		await io.output.markdown("It hasn't been ten seconds since the last person attempted to open the garage, please try again later")
+		return
+	}
+	await prisma.garageLastOpened.create({
+		data: {
+			userId: userId,
+			environmentId: ENVIRONMENT
+		}
+	});
+	try {
+		const response = await fetch('https://maker.ifttt.com/trigger/garage_open/with/key/m8rcOHUYrC1iRRiBn0rpiajrbfFH7vj0McyEC2aUxBA', {
+			method: 'POST',
+			mode: 'no-cors'
+		})
+		if (response.status !== 200) {
+			throw new Error("Failed to open gate")
+		}
+		await io.output.markdown("Opening Garage! Please wait a few seconds...")
+	} catch (e) {
+		console.log("Error opening gate", e)
+		await io.output.markdown("Error opening garage, please try again in a few seconds.")
+	}
+}
+
 export async function openGate(io: IO, prisma: PrismaClient, userId: string) {
 	console.log("Opening Gate");
 

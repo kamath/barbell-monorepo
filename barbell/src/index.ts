@@ -1,7 +1,7 @@
 import Bot, { Action } from "./barbell/bot";
 import { sendMessage } from "./barbell/utils/slack";
 import { bookRoom, getAvailableRooms } from "./utils/bookings";
-import { askForHelp, openGarage, openGate } from "./utils/openGarage";
+import { askForHelp, openGarage, openGarageBackup, openGate } from "./utils/openGarage";
 import { prisma } from "./utils/prisma";
 
 const bot = new Bot()
@@ -11,6 +11,10 @@ const openGarageAction = new Action({
 	handler: async ({ io, userId }) => {
 		await io.input.button("Open Mission St. Garage", async () => {
 			await openGarage(io, prisma, userId)
+		}, 'primary')
+
+		await io.input.button("Open Mission St. Garage (Backup)", async () => {
+			await openGarageBackup(io, prisma, userId)
 		}, 'primary')
 
 		await io.input.button("Open Otis Garage", async () => {
