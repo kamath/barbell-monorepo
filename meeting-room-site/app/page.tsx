@@ -53,10 +53,10 @@ function DisplayBooking() {
 
 		return (
 			<main className="flex h-screen items-center justify-center bg-red-100">
-				<div className="flex flex-col items-center justify-center">
-					<h1 className="text-4xl font-bold">{CONFERENCE_ROOM}</h1>
-					<p className="text-xl">Booked from {formatHumanReadableDate(bookingData.startDate)} to {formatHumanReadableDate(bookingData.endDate)}</p>
-					<p className="text-xl">Time remaining: {hours}h {minutes}m {seconds}s</p>
+				<div className="flex flex-col items-center justify-center gap-8">
+					<p className="text-8xl text-center font-bold">{hours}h {minutes}m {seconds}s</p>
+					<h1 className="text-5xl">{CONFERENCE_ROOM}</h1>
+					<p className="text-4xl">Booked until: <span className="font-bold">{formatHumanReadableDate(bookingData.endDate)}</span></p>
 				</div>
 			</main>
 		);
@@ -71,10 +71,10 @@ function DisplayBooking() {
 
 		return (
 			<main className="flex h-screen items-center justify-center bg-green-100">
-				<div className="flex flex-col items-center justify-center">
-					<h1 className="text-4xl font-bold">{CONFERENCE_ROOM}</h1>
-					<p className="text-xl">Next booking starts at {formatHumanReadableDate(bookingData.startDate)}</p>
-					<p className="text-xl">Time until next booking: {hours}h {minutes}m {seconds}s</p>
+				<div className="flex flex-col items-center justify-center gap-8">
+					<p className="text-8xl text-center font-bold">{hours}h {minutes}m {seconds}s</p>
+					<h1 className="text-5xl">{CONFERENCE_ROOM}</h1>
+					<p className="text-4xl">Next booking: <span className="font-bold">{formatHumanReadableDate(bookingData.startDate)}</span></p>
 				</div>
 			</main>
 		);
