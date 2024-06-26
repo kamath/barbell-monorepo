@@ -1,9 +1,8 @@
 "use client"
 
 import { Booking, getBooking } from "@/utils/getBooking";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-
-const CONFERENCE_ROOM = 'Conference Room 1'
 
 function formatHumanReadableDate(dateStr: string): string {
 	const date = new Date(dateStr);
@@ -18,7 +17,10 @@ function formatHumanReadableDate(dateStr: string): string {
 }
 
 export default function Home() {
+	const searchParams = useSearchParams();
 	const [bookingData, setBookingData] = useState<Booking | null>(null);
+
+	const CONFERENCE_ROOM = searchParams.get('room') || 'Conference Room 1';
 
 	useEffect(() => {
 		const fetchBookings = async () => {
