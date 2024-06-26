@@ -32,7 +32,7 @@ bot.defineDefaultAction(openGarageAction)
 const bookConferenceRoomAction = new Action({
 	name: "Book Conference Room",
 	handler: async ({ io, userId }) => {
-		await io.output.markdown(`*Booking a conference room is under construction, coming soon!*`)
+		await io.output.markdown(`*This might be glitchy on mobile due to Slack's SDK*`)
 		const startDate = await io.input.date("Date").then((date) => {
 			const [year, month, day] = date.split('-').map(Number);
 			console.log("DATE", year, month, day)
@@ -58,7 +58,7 @@ const bookConferenceRoomAction = new Action({
 			value: room.id
 		})))
 		console.log("GOT ROOM", room)
-		await io.output.markdown(`*Room: ${room.name}, ${room.value}*`)
+		await io.output.markdown(`*Room: ${room.name}*`)
 		await io.input.button("Book Room", async () => {
 			await bookRoom(room.value, startDate, startTime, endTime)
 			await io.output.markdown(`*Room booked successfully!*`)

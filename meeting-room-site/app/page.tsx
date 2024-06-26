@@ -27,18 +27,36 @@ function DisplayBooking() {
 			if (data) {
 				setBookingData(data);
 			}
-			setTimeout(fetchBookings, 10000);
 		};
 		fetchBookings();
+
+		const intervalId = setInterval(fetchBookings, 10000);
+		return () => clearInterval(intervalId);
+	}, []);
+
+	useEffect(() => {
+		const intervalId = setInterval(() => {
+			setBookingData((prevData) => {
+				if (!prevData) return prevData;
+				return { ...prevData };
+			});
+		}, 1000);
+		return () => clearInterval(intervalId);
 	}, []);
 
 	// Start date is in the past and end date is in the future
 	if (bookingData && new Date(bookingData.startDate) < new Date() && new Date(bookingData.endDate) > new Date()) {
+		const timeRemaining = new Date(bookingData.endDate).getTime() - new Date().getTime();
+		const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+		const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+		const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+
 		return (
 			<main className="flex h-screen items-center justify-center bg-red-100">
 				<div className="flex flex-col items-center justify-center">
 					<h1 className="text-4xl font-bold">{CONFERENCE_ROOM}</h1>
 					<p className="text-xl">Booked from {formatHumanReadableDate(bookingData.startDate)} to {formatHumanReadableDate(bookingData.endDate)}</p>
+					<p className="text-xl">Time remaining: {hours}h {minutes}m {seconds}s</p>
 				</div>
 			</main>
 		);
@@ -46,11 +64,17 @@ function DisplayBooking() {
 
 	// Start date is in the future
 	if (bookingData && new Date(bookingData.startDate) > new Date()) {
+		const timeRemaining = new Date(bookingData.startDate).getTime() - new Date().getTime();
+		const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+		const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+		const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+
 		return (
 			<main className="flex h-screen items-center justify-center bg-green-100">
 				<div className="flex flex-col items-center justify-center">
 					<h1 className="text-4xl font-bold">{CONFERENCE_ROOM}</h1>
 					<p className="text-xl">Next booking starts at {formatHumanReadableDate(bookingData.startDate)}</p>
+					<p className="text-xl">Time until next booking: {hours}h {minutes}m {seconds}s</p>
 				</div>
 			</main>
 		);
