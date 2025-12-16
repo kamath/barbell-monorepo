@@ -3,8 +3,6 @@ import {
 	type ChatPostMessageArguments,
 	type KnownBlock,
 	LogLevel,
-	ModalView,
-	ViewsPublishArguments,
 	WebClient,
 } from "@slack/web-api";
 import { SLACK_SECRETS } from "../consts";

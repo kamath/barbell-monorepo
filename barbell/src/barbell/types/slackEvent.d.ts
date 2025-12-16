@@ -1,4 +1,4 @@
-import { Action, Block } from "@slack/web-api";
+import { Block } from "@slack/web-api";
 
 export type BlockActionsPayload = {
 	type: "block_actions";

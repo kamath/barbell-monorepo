@@ -1,7 +1,6 @@
 import type { HeaderBlock } from "@slack/web-api";
 import { Hono } from "hono";
 import bot from "..";
-import { Action } from "./bot";
 import { ENVIRONMENT, INIT_ACTION_ID, INIT_MODAL_NAME } from "./consts";
 import type { ChannelType } from "./types/handlerInputs";
 import type { BlockActionsPayload } from "./types/slackEvent";

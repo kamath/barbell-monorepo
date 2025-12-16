@@ -116,9 +116,6 @@ class TextInput extends Input {
 }
 
 class DateInput extends Input {
-	constructor(name: string, value?: string | undefined) {
-		super(name, value);
-	}
 	render() {
 		return [
 			{
@@ -145,9 +142,6 @@ class DateInput extends Input {
 }
 
 class TimeInput extends Input {
-	constructor(name: string, value?: string | undefined) {
-		super(name, value);
-	}
 	render() {
 		return [
 			{
@@ -334,9 +328,6 @@ class MultiSelectInput extends Input {
 }
 
 abstract class Output extends InputOutput {
-	constructor(name: string) {
-		super(name);
-	}
 	abstract render(): Block[];
 }
 
@@ -578,7 +569,6 @@ export class Action {
 export default class Bot {
 	private actions: Record<string, Action> = {};
 	private defaultAction: Action | undefined;
-	constructor() {}
 	defineAction(action: Action) {
 		if (action.name in this.actions) {
 			throw new Error(`Duplicate action ${action.name}`);
