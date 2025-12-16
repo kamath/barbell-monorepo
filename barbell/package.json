@@ -6,13 +6,12 @@
     "dev": "bun run --watch src/barbell/server.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-secrets-manager": "^3.592.0",
     "@slack/web-api": "^7.0.4",
-    "elysia": "latest",
-    "prisma": "^5.15.0"
+    "hono": "^4.11.1"
   },
   "devDependencies": {
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "wrangler": "^4.55.0"
   },
   "module": "src/index.js"
 }
