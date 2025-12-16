@@ -44,7 +44,7 @@ bot.defineDefaultAction(openGarageAction);
 
 const bookConferenceRoomAction = new Action({
 	name: "Book Conference Room",
-	handler: async ({ io, userId }) => {
+	handler: async ({ io, userId, slackClient }) => {
 		await io.output.markdown(
 			`*This might be glitchy on mobile due to Slack's SDK*`,
 		);
@@ -82,6 +82,7 @@ const bookConferenceRoomAction = new Action({
 				console.log("BOOKING ROOM", room.value);
 				await io.output.markdown(`*Room booked successfully!*`);
 				await sendMessage(
+					slackClient,
 					[
 						{
 							type: "header",

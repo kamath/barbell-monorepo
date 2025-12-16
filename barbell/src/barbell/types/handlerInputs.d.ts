@@ -1,3 +1,5 @@
+import type { WebClient } from "@slack/web-api";
+
 export type ChannelType = "channel" | "im" | "mpim" | "home" | "modal";
 
 export type IO = {
@@ -30,4 +32,5 @@ export type HandlerInput = {
 	// If it's a modal or home page, channelId is the same as channelType
 	channelId: string;
 	channelType: ChannelType;
+	slackClient: WebClient;
 };

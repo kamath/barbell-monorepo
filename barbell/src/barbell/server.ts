@@ -1,4 +1,4 @@
-import type { HeaderBlock } from "@slack/web-api";
+import type { HeaderBlock, WebClient } from "@slack/web-api";
 import { Hono } from "hono";
 import bot from "..";
 import { ENVIRONMENT, INIT_ACTION_ID, INIT_MODAL_NAME } from "./consts";
@@ -7,6 +7,7 @@ import type { BlockActionsPayload } from "./types/slackEvent";
 import type { ShortcutPayload } from "./types/slashCommandPayload";
 import {
 	getActionValue,
+	getSlackClient,
 	openModal,
 	publishHomeTab,
 	updateModal,
@@ -16,6 +17,7 @@ const renderInitActionsBlocks = async (
 	userId: string,
 	channelId: string,
 	channelType: ChannelType,
+	slackClient: WebClient,
 ) => {
 	const defaultAction = bot.getDefaultAction();
 	const actionsBlocks = [
@@ -49,7 +51,12 @@ const renderInitActionsBlocks = async (
 		},
 	];
 	if (defaultAction === undefined) return actionsBlocks;
-	const blocks = await defaultAction.run(userId, channelId, channelType);
+	const blocks = await defaultAction.run(
+		userId,
+		channelId,
+		channelType,
+		slackClient,
+	);
 	return [
 		{
 			type: "header",
@@ -70,6 +77,8 @@ app.get("/", (c) => {
 });
 app.post("/slack/events", async (c) => {
 	// Slack sends form-encoded data for interactive components, JSON for events
+	const env = c.env;
+	const slackClient = getSlackClient(env);
 	const contentType = c.req.header("content-type") || "";
 	let body: any;
 	if (contentType.includes("application/x-www-form-urlencoded")) {
@@ -86,8 +95,10 @@ app.post("/slack/events", async (c) => {
 			body.event.user,
 			"home",
 			"home",
+			slackClient,
 		);
 		await publishHomeTab(
+			slackClient,
 			body.event.user,
 			initBlocks,
 			bot.getDefaultAction()?.name || INIT_MODAL_NAME,
@@ -103,8 +114,10 @@ app.post("/slack/events", async (c) => {
 				shortcutPayload.user.id,
 				"modal",
 				"modal",
+				slackClient,
 			);
 			await openModal(
+				slackClient,
 				shortcutPayload.trigger_id,
 				initBlocks,
 				bot.getDefaultAction()?.name || INIT_MODAL_NAME,
@@ -145,12 +158,14 @@ app.post("/slack/events", async (c) => {
 						blockActionsPayload.user.id,
 						blockActionsPayload.view.type,
 						blockActionsPayload.view.type as ChannelType,
+						slackClient,
 						flattenedInputs,
 						buttonClick,
 					);
 					console.log("RENDERING BLOCKS", blocks);
 					if (blockActionsPayload.view.type === "modal") {
 						await updateModal(
+							slackClient,
 							blockActionsPayload.view.id,
 							blocks,
 							action.name,
@@ -158,6 +173,7 @@ app.post("/slack/events", async (c) => {
 						);
 					} else {
 						await publishHomeTab(
+							slackClient,
 							blockActionsPayload.user.id,
 							blocks,
 							action.name,
@@ -172,9 +188,11 @@ app.post("/slack/events", async (c) => {
 					blockActionsPayload.user.id,
 					blockActionsPayload.view.type,
 					blockActionsPayload.view.type as ChannelType,
+					slackClient,
 				);
 				if (blockActionsPayload.view.type === "modal") {
 					await updateModal(
+						slackClient,
 						blockActionsPayload.view.id,
 						blocks,
 						action.name,
@@ -182,6 +200,7 @@ app.post("/slack/events", async (c) => {
 					);
 				} else {
 					await publishHomeTab(
+						slackClient,
 						blockActionsPayload.user.id,
 						blocks,
 						action.name,
