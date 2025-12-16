@@ -15,4 +15,4 @@ export type ShortcutPayload = {
 	enterprise: any | null;
 	callback_id: string;
 	trigger_id: string;
-}
+};

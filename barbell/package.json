@@ -1,17 +1,19 @@
 {
-  "name": "slash-command",
-  "version": "1.0.50",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/barbell/server.ts"
-  },
-  "dependencies": {
-    "@slack/web-api": "^7.0.4",
-    "hono": "^4.11.1"
-  },
-  "devDependencies": {
-    "bun-types": "latest",
-    "wrangler": "^4.55.0"
-  },
-  "module": "src/index.js"
+	"name": "slash-command",
+	"version": "1.0.50",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev": "bun run --watch src/barbell/server.ts",
+		"lint:fix": "biome check --write"
+	},
+	"dependencies": {
+		"@slack/web-api": "^7.0.4",
+		"hono": "^4.11.1"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "latest",
+		"bun-types": "latest",
+		"wrangler": "^4.55.0"
+	},
+	"module": "src/index.js"
 }

@@ -1,5 +1,5 @@
-export const ENVIRONMENT = process.env.ENVIRONMENT || "DEVELOPMENT"
-export const AWS_SECRET = `solaris_garage_${ENVIRONMENT}`
+export const ENVIRONMENT = process.env.ENVIRONMENT || "DEVELOPMENT";
+export const AWS_SECRET = `solaris_garage_${ENVIRONMENT}`;
 
 export const PARKING_CHANNEL_ID = process.env.PARKING_CHANNEL_ID || "";
 export const JACOB_SLACK_ID = process.env.JACOB_SLACK_ID || "";
