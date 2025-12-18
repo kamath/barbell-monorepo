@@ -1,7 +1,14 @@
 import { Hono } from "hono";
 import { ENVIRONMENT } from "./consts";
+import type {
+	AppMentionEvent,
+	SlackEventCallback,
+	SlackChallenge,
+	SlackInteractivePayload,
+	SlackWebhookPayload,
+} from "./types/slack-events";
 import { buildBlocks } from "./utils/buildBlocks";
-import { getSlackClient, sendMessage } from "./utils/slack";
+import { getSlackClient, getThreadReplies, sendMessage } from "./utils/slack";
 
 const app = new Hono<{ Bindings: Env }>();
 app.get("/", (c) => {
@@ -10,43 +17,82 @@ app.get("/", (c) => {
 app.post("/slack/events", async (c) => {
 	// Slack sends form-encoded data for interactive components, JSON for events
 	const contentType = c.req.header("content-type") || "";
-	let body: any;
+	let body: SlackWebhookPayload | { payload?: string };
+
 	if (contentType.includes("application/x-www-form-urlencoded")) {
-		body = await c.req.parseBody();
+		const parsed = await c.req.parseBody();
+		// Interactive components send payload as a string in form data
+		if (typeof parsed.payload === "string") {
+			body = JSON.parse(parsed.payload);
+		} else {
+			body = parsed;
+		}
 	} else {
-		body = await c.req.json();
+		body = (await c.req.json()) satisfies SlackWebhookPayload;
 	}
 
-	if (body.challenge) {
-		return c.text(body.challenge);
-	} else if (body.event) {
-		switch (body.event.type) {
+	// Handle URL verification challenge
+	if ("challenge" in body && body.type === "url_verification") {
+		const challenge: SlackChallenge = body;
+		return c.text(challenge.challenge);
+	}
+
+	// Handle event callbacks
+	if ("event" in body && body.type === "event_callback") {
+		const eventCallback: SlackEventCallback = body;
+
+		switch (eventCallback.event.type) {
 			case "app_home_opened":
-				console.log("APP HOME OPENED", JSON.stringify(body, null, 2));
+				console.log("APP HOME OPENED", JSON.stringify(eventCallback, null, 2));
 				break;
 			case "slash_command":
-				console.log("SLASH COMMAND PAYLOAD", JSON.stringify(body, null, 2));
+				console.log(
+					"SLASH COMMAND PAYLOAD",
+					JSON.stringify(eventCallback, null, 2),
+				);
 				break;
 			case "app_mention": {
-				console.log("APP MENTION", JSON.stringify(body, null, 2));
+				const appMentionEvent: AppMentionEvent = eventCallback.event;
+				console.log("APP MENTION", JSON.stringify(eventCallback, null, 2));
+
+				if (appMentionEvent.thread_ts) {
+					const thread = await getThreadReplies(
+						getSlackClient(c.env),
+						appMentionEvent.channel,
+						appMentionEvent.thread_ts,
+					);
+					console.log("THREAD", JSON.stringify(thread, null, 2));
+				}
+
 				const blocks = buildBlocks();
 				await sendMessage(
 					getSlackClient(c.env),
 					blocks.blocks,
-					body.event.channel,
-					body.event.ts,
+					appMentionEvent.channel,
+					appMentionEvent.ts,
 					false,
 				);
 				break;
 			}
 		}
 		return c.text("");
-	} else if (body.payload) {
-		const payload = JSON.parse(body.payload);
-		console.log("Command Payload", payload);
-	} else {
-		console.log("Unhandled event", JSON.stringify(body, null, 2));
 	}
+
+	// Handle interactive payloads
+	if ("type" in body && "actions" in body) {
+		const interactivePayload: SlackInteractivePayload = body;
+		console.log("Interactive Payload", interactivePayload);
+		return c.text("");
+	}
+
+	// Handle payload string (from form-encoded interactive components)
+	if ("payload" in body && typeof body.payload === "string") {
+		const payload: SlackInteractivePayload = JSON.parse(body.payload);
+		console.log("Command Payload", payload);
+		return c.text("");
+	}
+
+	console.log("Unhandled event", JSON.stringify(body, null, 2));
 	return c.text("");
 });
 
