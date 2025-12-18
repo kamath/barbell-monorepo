@@ -40,10 +40,8 @@ app.post("/slack/events", async (c) => {
 				break;
 			}
 		}
-		console.log("APP HOME OPENED", JSON.stringify(body, null, 2));
 		return c.text("");
 	} else if (body.payload) {
-		console.log("SLASH COMMAND PAYLOAD", JSON.stringify(body, null, 2));
 		const payload = JSON.parse(body.payload);
 		console.log("Command Payload", payload);
 	} else {
