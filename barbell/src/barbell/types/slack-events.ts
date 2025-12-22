@@ -107,3 +107,4 @@ export interface SlackInteractivePayload {
 
 export type SlackWebhookPayload = SlackChallenge | SlackEventCallback | SlackInteractivePayload;
 
+

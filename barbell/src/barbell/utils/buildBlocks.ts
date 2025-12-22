@@ -1,6 +1,10 @@
-export function buildBlocks() {
-	return {
-		blocks: [
+import type { ConversationsRepliesResponse } from "@slack/web-api";
+
+export function buildBlocks(
+	threadMessages: ConversationsRepliesResponse["messages"],
+) {
+	if (!threadMessages) {
+		return [
 			{
 				type: "section",
 				text: {
@@ -87,6 +91,15 @@ export function buildBlocks() {
 					},
 				],
 			},
-		],
-	};
+		];
+	}
+	return threadMessages.map((message) => {
+		return {
+			type: "section",
+			text: {
+				type: "mrkdwn",
+				text: `\`\`\`${JSON.stringify(message, null, 2)}\`\`\``,
+			},
+		};
+	});
 }

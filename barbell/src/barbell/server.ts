@@ -9,6 +9,7 @@ import type {
 } from "./types/slack-events";
 import { buildBlocks } from "./utils/buildBlocks";
 import { getSlackClient, getThreadReplies, sendMessage } from "./utils/slack";
+import { ConversationsRepliesResponse } from "@slack/web-api";
 
 const app = new Hono<{ Bindings: Env }>();
 app.get("/", (c) => {
@@ -54,20 +55,23 @@ app.post("/slack/events", async (c) => {
 			case "app_mention": {
 				const appMentionEvent: AppMentionEvent = eventCallback.event;
 				console.log("APP MENTION", JSON.stringify(eventCallback, null, 2));
+				let threadMessages:
+					| ConversationsRepliesResponse["messages"]
+					| undefined;
 
 				if (appMentionEvent.thread_ts) {
-					const thread = await getThreadReplies(
+					threadMessages = await getThreadReplies(
 						getSlackClient(c.env),
 						appMentionEvent.channel,
 						appMentionEvent.thread_ts,
 					);
-					console.log("THREAD", JSON.stringify(thread, null, 2));
+					console.log("THREAD", JSON.stringify(threadMessages, null, 2));
 				}
 
-				const blocks = buildBlocks();
+				const blocks = buildBlocks(threadMessages);
 				await sendMessage(
 					getSlackClient(c.env),
-					blocks.blocks,
+					blocks,
 					appMentionEvent.channel,
 					appMentionEvent.ts,
 					false,
