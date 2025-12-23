@@ -38,7 +38,10 @@ export interface SlashCommandEvent extends SlackEventBase {
 	channel_name?: string;
 }
 
-export type SlackEvent = AppMentionEvent | AppHomeOpenedEvent | SlashCommandEvent;
+export type SlackEvent =
+	| AppMentionEvent
+	| AppHomeOpenedEvent
+	| SlashCommandEvent;
 
 export interface SlackEventCallback {
 	token?: string;
@@ -67,7 +70,7 @@ export interface SlackChallenge {
 }
 
 export interface SlackInteractivePayload {
-	type: string;
+	type: "block_actions";
 	team?: {
 		id: string;
 		domain: string;
@@ -105,6 +108,7 @@ export interface SlackInteractivePayload {
 	}>;
 }
 
-export type SlackWebhookPayload = SlackChallenge | SlackEventCallback | SlackInteractivePayload;
-
-
+export type SlackWebhookPayload =
+	| SlackChallenge
+	| SlackEventCallback
+	| SlackInteractivePayload;

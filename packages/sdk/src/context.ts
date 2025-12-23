@@ -30,6 +30,39 @@ export interface EventContext {
 }
 
 /**
+ * Represents an action triggered by a user interacting with a block element.
+ * This is sent when users click buttons, select options, etc.
+ * Matches the structure of action objects in Slack's block_actions payload.
+ */
+export interface BlockAction {
+	/** The action_id of the interactive element */
+	action_id?: string;
+	/** The block_id of the block containing the element */
+	block_id?: string;
+	/** The type of element that triggered the action (button, static_select, etc.) */
+	type: string;
+	/** The value associated with the action (for buttons) */
+	value?: string;
+	/** Timestamp when the action was triggered */
+	action_ts?: string;
+	/** Text content of the element (for buttons) */
+	text?: {
+		type: string;
+		text: string;
+		emoji?: boolean;
+	};
+	/** Selected option (for select menus) */
+	selected_option?: {
+		text: {
+			type: string;
+			text: string;
+			emoji?: boolean;
+		};
+		value: string;
+	};
+}
+
+/**
  * The context object passed to the customer's main function.
  */
 export interface BarbellContext {
@@ -39,4 +72,6 @@ export interface BarbellContext {
 	event: EventContext;
 	/** Reserved for future extensibility */
 	metadata?: Record<string, unknown>;
+	/** Block actions */
+	blockAction: BlockAction[];
 }

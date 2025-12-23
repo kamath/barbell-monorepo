@@ -87,6 +87,7 @@ app.post("/slack/events", async (c) => {
 						ts: appMentionEvent.ts,
 						thread_ts: appMentionEvent.thread_ts,
 					},
+					blockAction: [], // No block actions for app mentions
 				};
 
 				// Dispatch to customer worker with JSON context
@@ -135,16 +136,88 @@ app.post("/slack/events", async (c) => {
 	}
 
 	// Handle interactive payloads
-	if ("type" in body && "actions" in body) {
+	if ("type" in body && body.type === "block_actions") {
 		const interactivePayload: SlackInteractivePayload = body;
 		console.log("Interactive Payload", interactivePayload);
-		return c.text("");
-	}
 
-	// Handle payload string (from form-encoded interactive components)
-	if ("payload" in body && typeof body.payload === "string") {
-		const payload: SlackInteractivePayload = JSON.parse(body.payload);
-		console.log("Command Payload", payload);
+		// Extract channel and message info from container
+		const container = interactivePayload.container as
+			| {
+					type?: string;
+					channel_id?: string;
+					message_ts?: string;
+					thread_ts?: string;
+			  }
+			| undefined;
+
+		const channel = container?.channel_id || "";
+		const messageTs = container?.message_ts || "";
+		const threadTs = container?.thread_ts;
+		const userId = interactivePayload.user?.id || "";
+
+		// Map actions to BlockAction format
+		const blockActions = (interactivePayload.actions || []).map((action) => ({
+			action_id: action.action_id,
+			block_id: action.block_id,
+			type: action.type,
+			value: action.value,
+			action_ts: action.action_ts,
+			text: action.text,
+			selected_option: action.selected_option,
+		}));
+
+		// Build structured context for customer worker
+		const context: BarbellContext = {
+			threadMessages: undefined, // Interactive payloads don't include thread messages
+			event: {
+				channel,
+				user: userId,
+				text: "", // Interactive payloads don't have message text
+				ts: messageTs,
+				thread_ts: threadTs,
+			},
+			blockAction: blockActions,
+		};
+
+		// Dispatch to customer worker with JSON context
+		const worker = c.env.DISPATCHER.get("customer-worker-1");
+		const response = await worker.fetch(
+			new Request("https://internal/", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(context),
+			}),
+		);
+
+		// Parse the response
+		const result = (await response.json()) as WorkerResponse;
+
+		if (result.error) {
+			console.error("Customer worker error:", result.message);
+			await sendMessage(
+				getSlackClient(c.env),
+				[
+					{
+						type: "section",
+						text: {
+							type: "mrkdwn",
+							text: `:warning: Error: ${result.message}`,
+						},
+					},
+				],
+				channel,
+				messageTs,
+				false,
+			);
+		} else if (result.blocks) {
+			await sendMessage(
+				getSlackClient(c.env),
+				result.blocks,
+				channel,
+				messageTs,
+				false,
+			);
+		}
 		return c.text("");
 	}
 

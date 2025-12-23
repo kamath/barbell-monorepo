@@ -1,96 +1,108 @@
 /**
- * Simplified Slack Block Kit types for customer use.
- * These mirror Slack's Block Kit but are self-contained to avoid
- * exposing @slack/web-api as a dependency.
+ * Re-export Slack types from @slack/types.
+ * This provides direct access to Slack's official type definitions
+ * without requiring customers to install @slack/types themselves.
  */
 
-// Text elements
-export interface PlainTextElement {
-	type: "plain_text";
-	text: string;
-	emoji?: boolean;
-}
+import type { Button, ConfirmationDialog } from "@slack/types";
 
-export interface MrkdwnElement {
-	type: "mrkdwn";
-	text: string;
-	verbatim?: boolean;
-}
+// Block Kit - Blocks
+export type {
+	Block,
+	KnownBlock,
+	AnyBlock,
+	ActionsBlock,
+	ContextBlock,
+	ContextActionsBlock,
+	DividerBlock,
+	FileBlock,
+	HeaderBlock,
+	ImageBlock,
+	InputBlock,
+	MarkdownBlock,
+	RichTextBlock,
+	SectionBlock,
+	TableBlock,
+	VideoBlock,
+} from "@slack/types";
 
-export type TextObject = PlainTextElement | MrkdwnElement;
+// Block Kit - Block Elements
+export type {
+	Button,
+	Checkboxes,
+	Datepicker,
+	DateTimepicker,
+	EmailInput,
+	FeedbackButtons,
+	FileInput,
+	IconButton,
+	ImageElement,
+	MultiSelect,
+	NumberInput,
+	Overflow,
+	PlainTextInput,
+	RadioButtons,
+	RichTextInput,
+	RichTextList,
+	RichTextPreformatted,
+	RichTextQuote,
+	RichTextSection,
+	Select,
+	StaticSelect,
+	ExternalSelect,
+	UsersSelect,
+	ConversationsSelect,
+	ChannelsSelect,
+	MultiStaticSelect,
+	MultiExternalSelect,
+	MultiUsersSelect,
+	MultiConversationsSelect,
+	MultiChannelsSelect,
+	Timepicker,
+	URLInput,
+	WorkflowButton,
+	ActionsBlockElement,
+} from "@slack/types";
 
-// Interactive elements
-export interface ButtonElement {
-	type: "button";
-	text: PlainTextElement;
-	action_id?: string;
-	url?: string;
-	value?: string;
-	style?: "primary" | "danger";
-	confirm?: ConfirmDialog;
-}
+// Block Kit - Composition Objects
+export type {
+	PlainTextElement,
+	MrkdwnElement,
+	TextObject,
+	RawTextElement,
+	ConfirmationDialog,
+	Confirm,
+	DispatchActionConfig,
+	Option,
+	MrkdwnOption,
+	PlainTextOption,
+	OptionGroup,
+	SlackFileImageObject,
+	UrlImageObject,
+	ColorScheme,
+	ConversationType,
+} from "@slack/types";
 
-export interface ImageElement {
-	type: "image";
-	image_url: string;
-	alt_text: string;
-}
+// Views (Modals, Home Tabs, etc.)
+export type {
+	View,
+	HomeView,
+	ModalView,
+	WorkflowStepView,
+} from "@slack/types";
 
-export interface ConfirmDialog {
-	title: PlainTextElement;
-	text: TextObject;
-	confirm: PlainTextElement;
-	deny: PlainTextElement;
-	style?: "primary" | "danger";
-}
+// Message Attachments
+export type {
+	MessageAttachment,
+	LinkUnfurls,
+} from "@slack/types";
 
-// Block types
-export interface SectionBlock {
-	type: "section";
-	text?: TextObject;
-	block_id?: string;
-	fields?: TextObject[];
-	accessory?: ImageElement | ButtonElement;
-}
+// Message Metadata
+export type {
+	MessageMetadata,
+	EntityMetadata,
+} from "@slack/types";
 
-export interface DividerBlock {
-	type: "divider";
-	block_id?: string;
-}
-
-export interface ImageBlock {
-	type: "image";
-	image_url: string;
-	alt_text: string;
-	title?: PlainTextElement;
-	block_id?: string;
-}
-
-export interface ActionsBlock {
-	type: "actions";
-	elements: ButtonElement[];
-	block_id?: string;
-}
-
-export interface HeaderBlock {
-	type: "header";
-	text: PlainTextElement;
-	block_id?: string;
-}
-
-export interface ContextBlock {
-	type: "context";
-	elements: (TextObject | ImageElement)[];
-	block_id?: string;
-}
-
-/**
- * Union of all supported block types.
- */
-export type Block =
-	| SectionBlock
-	| DividerBlock
-	| ImageBlock
-	| ActionsBlock
-	| HeaderBlock
-	| ContextBlock;
+// Backward compatibility aliases
+export type ButtonElement = Button;
+export type ConfirmDialog = ConfirmationDialog;
