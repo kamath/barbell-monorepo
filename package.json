@@ -7,6 +7,7 @@
 		"customer-worker-1"
 	],
 	"scripts": {
-		"build:packages": "bun run --filter '@barbell/*' build"
+		"build:packages": "bun run --filter '@barbell/*' build",
+		"lint:fix": "biome check --write"
 	}
 }
