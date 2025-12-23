@@ -15,6 +15,13 @@
   "observability": {
     "enabled": true
   },
+  "dispatch_namespaces": [
+    {
+      "binding": "DISPATCHER",
+      "namespace": "testing",
+      "remote": true
+    }
+  ],
   /**
    * Smart Placement
    * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

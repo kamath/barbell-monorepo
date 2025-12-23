@@ -16,6 +16,9 @@ app.get("/", (c) => {
 	return c.json({ status: 200, ENVIRONMENT });
 });
 app.post("/slack/events", async (c) => {
+	// Clone the request before consuming the body, so we can forward it later if needed
+	const clonedRequest = c.req.raw.clone();
+	
 	// Slack sends form-encoded data for interactive components, JSON for events
 	const contentType = c.req.header("content-type") || "";
 	let body: SlackWebhookPayload | { payload?: string };
@@ -67,11 +70,18 @@ app.post("/slack/events", async (c) => {
 					);
 					console.log("THREAD", JSON.stringify(threadMessages, null, 2));
 				}
-
+				const worker = c.env.DISPATCHER.get("customer-worker-1");
+				const data = await worker.fetch(c.req.raw);
 				const blocks = buildBlocks(threadMessages);
 				await sendMessage(
 					getSlackClient(c.env),
-					blocks,
+					[
+						{
+							type: "section",
+							text: { type: "mrkdwn", text: JSON.stringify(data, null, 2) },
+						},
+						...blocks,
+					],
 					appMentionEvent.channel,
 					appMentionEvent.ts,
 					false,
