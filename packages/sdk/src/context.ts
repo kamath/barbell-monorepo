@@ -62,16 +62,20 @@ export interface BlockAction {
 	};
 }
 
+type BaseContext = {
+	event: EventContext;
+	metadata?: Record<string, unknown>;
+};
+
 /**
  * The context object passed to the customer's main function.
  */
-export interface BarbellContext {
-	/** Thread messages (if the event occurred in a thread) */
-	threadMessages: ThreadMessage[] | undefined;
-	/** Event metadata */
-	event: EventContext;
-	/** Reserved for future extensibility */
-	metadata?: Record<string, unknown>;
-	/** Block actions */
+export type MessageContext = BaseContext & {
+	threadMessages: ThreadMessage[];
+};
+
+export type BlockActionContext = BaseContext & {
 	blockAction: BlockAction[];
-}
+};
+
+export type BarbellContext = MessageContext | BlockActionContext;

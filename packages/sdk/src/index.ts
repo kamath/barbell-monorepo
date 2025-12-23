@@ -1,6 +1,8 @@
 // Context types
 export type {
 	BarbellContext,
+	BlockActionContext,
+	MessageContext,
 	EventContext,
 	ThreadMessage,
 	BlockAction,

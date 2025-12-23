@@ -1,26 +1,25 @@
-import type { BarbellContext, KnownBlock } from "@barbell/sdk";
+import type {
+	BarbellContext,
+	BlockActionContext,
+	KnownBlock,
+	MessageContext,
+} from "@barbell/sdk";
 
-/**
- * This is your main function. It receives context about the Slack event
- * and should return an array of Slack Block Kit blocks.
- */
-export default async function main(
-	context: BarbellContext,
-): Promise<KnownBlock[]> {
-	const { threadMessages, event, blockAction } = context;
-
-	// Handle block actions (button clicks, etc.)
-	if (blockAction) {
-		return [
-			{
-				type: "section",
-				text: {
-					type: "mrkdwn",
-					text: `Nice!\n\`\`\`${JSON.stringify(blockAction, null, 2)}\`\`\``,
-				},
+function handleBlockAction(context: BlockActionContext): KnownBlock[] {
+	return [
+		{
+			type: "section",
+			text: {
+				type: "mrkdwn",
+				text: `Nice!\n\`\`\`${JSON.stringify(context.blockAction, null, 2)}\`\`\``,
 			},
-		];
-	}
+		},
+	];
+}
+
+function handleMessageContext(context: MessageContext): KnownBlock[] {
+	// Handle message context (thread messages)
+	const { threadMessages, event } = context;
 
 	// If there's no event context, return empty (shouldn't happen)
 	if (!event) {
@@ -436,4 +435,19 @@ export default async function main(
 			},
 		})),
 	];
+}
+
+/**
+ * This is your main function. It receives context about the Slack event
+ * and should return an array of Slack Block Kit blocks.
+ */
+export default async function main(
+	context: BarbellContext,
+): Promise<KnownBlock[]> {
+	// Handle block actions (button clicks, etc.)
+	if ("blockAction" in context) {
+		return handleBlockAction(context);
+	}
+
+	return handleMessageContext(context);
 }

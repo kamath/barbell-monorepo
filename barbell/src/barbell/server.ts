@@ -9,8 +9,8 @@ import type {
 } from "./types/slack-events";
 import { getSlackClient, getThreadReplies, sendMessage } from "./utils/slack";
 import type { ConversationsRepliesResponse } from "@slack/web-api";
-import type { BarbellContext } from "@barbell/sdk";
 import type { WorkerResponse } from "@barbell/runtime";
+import { BlockActionContext, MessageContext } from "@barbell/sdk/dist/context";
 
 const app = new Hono<{ Bindings: Env }>();
 app.get("/", (c) => {
@@ -70,8 +70,8 @@ app.post("/slack/events", async (c) => {
 				}
 
 				// Build structured context for customer worker
-				const context: BarbellContext = {
-					threadMessages: threadMessages?.map((msg) => ({
+				const context: MessageContext = {
+					threadMessages: (threadMessages ?? []).map((msg) => ({
 						user: msg.user,
 						text: msg.text,
 						ts: msg.ts,
@@ -87,7 +87,6 @@ app.post("/slack/events", async (c) => {
 						ts: appMentionEvent.ts,
 						thread_ts: appMentionEvent.thread_ts,
 					},
-					blockAction: [], // No block actions for app mentions
 				};
 
 				// Dispatch to customer worker with JSON context
@@ -167,8 +166,7 @@ app.post("/slack/events", async (c) => {
 		}));
 
 		// Build structured context for customer worker
-		const context: BarbellContext = {
-			threadMessages: undefined, // Interactive payloads don't include thread messages
+		const context: BlockActionContext = {
 			event: {
 				channel,
 				user: userId,
