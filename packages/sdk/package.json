@@ -1,33 +1,33 @@
 {
-  "name": "@barbell/sdk",
-  "version": "0.1.0",
-  "description": "SDK types for building Barbell workers",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "tsc",
-    "prepublishOnly": "npm run build"
-  },
-  "devDependencies": {
-    "typescript": "^5.5.2"
-  },
-  "keywords": [
-    "barbell",
-    "slack",
-    "bot"
-  ],
-  "license": "MIT",
-  "dependencies": {
-    "@slack/web-api": "^7.13.0"
-  }
+	"name": "@barbell/sdk",
+	"version": "0.1.0",
+	"description": "SDK types for building Barbell workers",
+	"type": "module",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsc",
+		"prepublishOnly": "npm run build"
+	},
+	"devDependencies": {
+		"typescript": "^5.5.2"
+	},
+	"keywords": [
+		"barbell",
+		"slack",
+		"bot"
+	],
+	"license": "MIT",
+	"dependencies": {
+		"@slack/web-api": "^7.13.0"
+	}
 }

@@ -1,11 +1,10 @@
-export { createWorker } from "./wrapper";
-export type { WorkerResponse } from "./wrapper";
-
 // Re-export SDK types for convenience
 export type {
 	BarbellContext,
-	EventContext,
-	ThreadMessage,
 	Block,
+	EventContext,
 	MainFunction,
+	ThreadMessage,
 } from "@barbell/sdk";
+export type { WorkerResponse } from "./wrapper";
+export { createWorker } from "./wrapper";

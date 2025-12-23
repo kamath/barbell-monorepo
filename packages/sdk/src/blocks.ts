@@ -7,100 +7,85 @@
 import type { Button, ConfirmationDialog } from "@slack/types";
 
 // Block Kit - Blocks
-export type {
-	Block,
-	KnownBlock,
-	AnyBlock,
-	ActionsBlock,
-	ContextBlock,
-	ContextActionsBlock,
-	DividerBlock,
-	FileBlock,
-	HeaderBlock,
-	ImageBlock,
-	InputBlock,
-	MarkdownBlock,
-	RichTextBlock,
-	SectionBlock,
-	TableBlock,
-	VideoBlock,
-} from "@slack/types";
-
 // Block Kit - Block Elements
+// Block Kit - Composition Objects
+// Views (Modals, Home Tabs, etc.)
+// Message Attachments
+// Message Metadata
 export type {
+	ActionsBlock,
+	ActionsBlockElement,
+	AnyBlock,
+	Block,
 	Button,
+	ChannelsSelect,
 	Checkboxes,
+	ColorScheme,
+	Confirm,
+	ConfirmationDialog,
+	ContextActionsBlock,
+	ContextBlock,
+	ConversationsSelect,
+	ConversationType,
 	Datepicker,
 	DateTimepicker,
+	DispatchActionConfig,
+	DividerBlock,
 	EmailInput,
+	EntityMetadata,
+	ExternalSelect,
 	FeedbackButtons,
+	FileBlock,
 	FileInput,
+	HeaderBlock,
+	HomeView,
 	IconButton,
+	ImageBlock,
 	ImageElement,
+	InputBlock,
+	KnownBlock,
+	LinkUnfurls,
+	MarkdownBlock,
+	MessageAttachment,
+	MessageMetadata,
+	ModalView,
+	MrkdwnElement,
+	MrkdwnOption,
+	MultiChannelsSelect,
+	MultiConversationsSelect,
+	MultiExternalSelect,
 	MultiSelect,
+	MultiStaticSelect,
+	MultiUsersSelect,
 	NumberInput,
+	Option,
+	OptionGroup,
 	Overflow,
+	PlainTextElement,
 	PlainTextInput,
+	PlainTextOption,
 	RadioButtons,
+	RawTextElement,
+	RichTextBlock,
 	RichTextInput,
 	RichTextList,
 	RichTextPreformatted,
 	RichTextQuote,
 	RichTextSection,
+	SectionBlock,
 	Select,
+	SlackFileImageObject,
 	StaticSelect,
-	ExternalSelect,
-	UsersSelect,
-	ConversationsSelect,
-	ChannelsSelect,
-	MultiStaticSelect,
-	MultiExternalSelect,
-	MultiUsersSelect,
-	MultiConversationsSelect,
-	MultiChannelsSelect,
+	TableBlock,
+	TextObject,
 	Timepicker,
 	URLInput,
-	WorkflowButton,
-	ActionsBlockElement,
-} from "@slack/types";
-
-// Block Kit - Composition Objects
-export type {
-	PlainTextElement,
-	MrkdwnElement,
-	TextObject,
-	RawTextElement,
-	ConfirmationDialog,
-	Confirm,
-	DispatchActionConfig,
-	Option,
-	MrkdwnOption,
-	PlainTextOption,
-	OptionGroup,
-	SlackFileImageObject,
 	UrlImageObject,
-	ColorScheme,
-	ConversationType,
-} from "@slack/types";
-
-// Views (Modals, Home Tabs, etc.)
-export type {
+	UsersSelect,
+	VideoBlock,
 	View,
-	HomeView,
-	ModalView,
+	WorkflowButton,
 	WorkflowStepView,
-} from "@slack/types";
-
-// Message Attachments
-export type {
-	MessageAttachment,
-	LinkUnfurls,
-} from "@slack/types";
-
-// Message Metadata
-export type {
-	MessageMetadata,
-	EntityMetadata,
 } from "@slack/types";
 
 // Backward compatibility aliases
