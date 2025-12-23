@@ -15,3 +15,5 @@ barbell/node_modules
 
 bolt-bot/src/node_modules
 
+**/node_modules
+**/dist

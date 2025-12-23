@@ -7,6 +7,8 @@
 		"lint:fix": "biome check --write"
 	},
 	"dependencies": {
+		"@barbell/sdk": "workspace:*",
+		"@barbell/runtime": "workspace:*",
 		"@slack/web-api": "^7.0.4",
 		"hono": "^4.11.1"
 	},

@@ -1,0 +1,12 @@
+{
+	"name": "barbell-monorepo",
+	"private": true,
+	"workspaces": [
+		"packages/*",
+		"barbell",
+		"customer-worker-1"
+	],
+	"scripts": {
+		"build:packages": "bun run --filter '@barbell/*' build"
+	}
+}

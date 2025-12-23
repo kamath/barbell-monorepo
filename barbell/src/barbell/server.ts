@@ -7,18 +7,16 @@ import type {
 	SlackInteractivePayload,
 	SlackWebhookPayload,
 } from "./types/slack-events";
-import { buildBlocks } from "./utils/buildBlocks";
 import { getSlackClient, getThreadReplies, sendMessage } from "./utils/slack";
-import { ConversationsRepliesResponse } from "@slack/web-api";
+import type { ConversationsRepliesResponse } from "@slack/web-api";
+import type { BarbellContext } from "@barbell/sdk";
+import type { WorkerResponse } from "@barbell/runtime";
 
 const app = new Hono<{ Bindings: Env }>();
 app.get("/", (c) => {
 	return c.json({ status: 200, ENVIRONMENT });
 });
 app.post("/slack/events", async (c) => {
-	// Clone the request before consuming the body, so we can forward it later if needed
-	const clonedRequest = c.req.raw.clone();
-	
 	// Slack sends form-encoded data for interactive components, JSON for events
 	const contentType = c.req.header("content-type") || "";
 	let body: SlackWebhookPayload | { payload?: string };
@@ -70,22 +68,66 @@ app.post("/slack/events", async (c) => {
 					);
 					console.log("THREAD", JSON.stringify(threadMessages, null, 2));
 				}
+
+				// Build structured context for customer worker
+				const context: BarbellContext = {
+					threadMessages: threadMessages?.map((msg) => ({
+						user: msg.user,
+						text: msg.text,
+						ts: msg.ts,
+						thread_ts: msg.thread_ts,
+						type: msg.type,
+						bot_id: msg.bot_id,
+						app_id: msg.app_id,
+					})),
+					event: {
+						channel: appMentionEvent.channel,
+						user: appMentionEvent.user,
+						text: appMentionEvent.text,
+						ts: appMentionEvent.ts,
+						thread_ts: appMentionEvent.thread_ts,
+					},
+				};
+
+				// Dispatch to customer worker with JSON context
 				const worker = c.env.DISPATCHER.get("customer-worker-1");
-				const data = await worker.fetch(c.req.raw);
-				const blocks = buildBlocks(threadMessages);
-				await sendMessage(
-					getSlackClient(c.env),
-					[
-						{
-							type: "section",
-							text: { type: "mrkdwn", text: JSON.stringify(data, null, 2) },
-						},
-						...blocks,
-					],
-					appMentionEvent.channel,
-					appMentionEvent.ts,
-					false,
+				const response = await worker.fetch(
+					new Request("https://internal/", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify(context),
+					}),
 				);
+
+				// Parse the response
+				const result = (await response.json()) as WorkerResponse;
+
+				if (result.error) {
+					console.error("Customer worker error:", result.message);
+					await sendMessage(
+						getSlackClient(c.env),
+						[
+							{
+								type: "section",
+								text: {
+									type: "mrkdwn",
+									text: `:warning: Error: ${result.message}`,
+								},
+							},
+						],
+						appMentionEvent.channel,
+						appMentionEvent.ts,
+						false,
+					);
+				} else if (result.blocks) {
+					await sendMessage(
+						getSlackClient(c.env),
+						result.blocks,
+						appMentionEvent.channel,
+						appMentionEvent.ts,
+						false,
+					);
+				}
 				break;
 			}
 		}
