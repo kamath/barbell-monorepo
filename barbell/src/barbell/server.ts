@@ -1,75 +1,16 @@
-import type { HeaderBlock, WebClient } from "@slack/web-api";
 import { Hono } from "hono";
-import bot from "..";
-import { ENVIRONMENT, INIT_ACTION_ID, INIT_MODAL_NAME } from "./consts";
-import type { ChannelType } from "./types/handlerInputs";
-import type { BlockActionsPayload } from "./types/slackEvent";
-import type { ShortcutPayload } from "./types/slashCommandPayload";
-import {
-	getActionValue,
-	getSlackClient,
-	openModal,
-	publishHomeTab,
-	updateModal,
-} from "./utils/slack";
-
-const renderInitActionsBlocks = async (
-	userId: string,
-	channelId: string,
-	channelType: ChannelType,
-	slackClient: WebClient,
-) => {
-	const defaultAction = bot.getDefaultAction();
-	const actionsBlocks = [
-		{
-			type: "section",
-			text: {
-				type: "mrkdwn",
-				text: defaultAction
-					? "...or select a different action from the dropdown list"
-					: "Select an action",
-			},
-			accessory: {
-				type: "static_select",
-				placeholder: {
-					type: "plain_text",
-					text: "Select an item",
-					emoji: true,
-				},
-				options: Object.values(bot.getActions()).map((action) => {
-					return {
-						text: {
-							type: "plain_text",
-							text: action.name,
-							emoji: true,
-						},
-						value: action.name,
-					};
-				}),
-				action_id: INIT_ACTION_ID,
-			},
-		},
-	];
-	if (defaultAction === undefined) return actionsBlocks;
-	const blocks = await defaultAction.run(
-		userId,
-		channelId,
-		channelType,
-		slackClient,
-	);
-	return [
-		{
-			type: "header",
-			text: {
-				type: "plain_text",
-				text: `Default Action: ${defaultAction.name}`,
-				emoji: true,
-			},
-		},
-		...blocks,
-		...actionsBlocks,
-	];
-};
+import { ENVIRONMENT } from "./consts";
+import type {
+	AppMentionEvent,
+	SlackEventCallback,
+	SlackChallenge,
+	SlackInteractivePayload,
+	SlackWebhookPayload,
+} from "./types/slack-events";
+import { getSlackClient, getThreadReplies, sendMessage } from "./utils/slack";
+import type { ConversationsRepliesResponse } from "@slack/web-api";
+import type { BarbellContext } from "@barbell/sdk";
+import type { WorkerResponse } from "@barbell/runtime";
 
 const app = new Hono<{ Bindings: Env }>();
 app.get("/", (c) => {
@@ -77,141 +18,137 @@ app.get("/", (c) => {
 });
 app.post("/slack/events", async (c) => {
 	// Slack sends form-encoded data for interactive components, JSON for events
-	const env = c.env;
-	const slackClient = getSlackClient(env);
 	const contentType = c.req.header("content-type") || "";
-	let body: any;
+	let body: SlackWebhookPayload | { payload?: string };
+
 	if (contentType.includes("application/x-www-form-urlencoded")) {
-		body = await c.req.parseBody();
+		const parsed = await c.req.parseBody();
+		// Interactive components send payload as a string in form data
+		if (typeof parsed.payload === "string") {
+			body = JSON.parse(parsed.payload);
+		} else {
+			body = parsed;
+		}
 	} else {
-		body = await c.req.json();
+		body = (await c.req.json()) satisfies SlackWebhookPayload;
 	}
 
-	if (body.challenge) {
-		return c.text(body.challenge);
-	} else if (body.event && body.event.type === "app_home_opened") {
-		console.log("APP HOME OPENED", body);
-		const initBlocks = await renderInitActionsBlocks(
-			body.event.user,
-			"home",
-			"home",
-			slackClient,
-		);
-		await publishHomeTab(
-			slackClient,
-			body.event.user,
-			initBlocks,
-			bot.getDefaultAction()?.name || INIT_MODAL_NAME,
-		);
-		return c.text("");
-	} else if (body.payload) {
-		console.log("Body", body);
-		const payload = JSON.parse(body.payload);
-		console.log("Slash Command Payload", payload);
-		if (payload.type === "shortcut") {
-			const shortcutPayload = payload as ShortcutPayload;
-			const initBlocks = await renderInitActionsBlocks(
-				shortcutPayload.user.id,
-				"modal",
-				"modal",
-				slackClient,
-			);
-			await openModal(
-				slackClient,
-				shortcutPayload.trigger_id,
-				initBlocks,
-				bot.getDefaultAction()?.name || INIT_MODAL_NAME,
-			);
-			return c.text("");
-		} else if (payload.type === "block_actions") {
-			const blockActionsPayload = payload as BlockActionsPayload;
-			console.log("Block Actions Payload", blockActionsPayload);
-			const actionInput = blockActionsPayload.actions[0];
-			if (actionInput.action_id !== INIT_ACTION_ID) {
-				if (blockActionsPayload.view.state) {
-					const { state } = blockActionsPayload.view;
-					const inputs = Array.from(Object.values(state.values));
-					const actionName =
-						blockActionsPayload.view.type === "modal"
-							? blockActionsPayload.view.title.text
-							: (blockActionsPayload.view.blocks[0] as HeaderBlock).text.text;
-					console.log("GOT INPUTS", actionName, inputs);
-					const action = bot.getAction(actionName);
-					if (action === undefined) throw new Error("Action not found");
-					// inputs is a list of {key: object} -> flatten this into one object
-					const flattenedInputs = inputs
-						.filter((input) => Object.keys(input)[0] !== INIT_ACTION_ID)
-						.reduce((acc, input) => {
-							const key = Object.keys(input)[0];
-							acc[key] = input[key];
-							return acc;
-						}, {});
-					console.log("FLATTENED INPUTS", flattenedInputs);
-					const buttonClick = blockActionsPayload.actions
-						.filter((action) => action.type === "button")
-						.map((action) => ({
-							action: action.action_id,
-							value: action.value,
-						}))?.[0];
-					console.log("BUTTON CLICK", buttonClick);
-					const blocks = await action.run(
-						blockActionsPayload.user.id,
-						blockActionsPayload.view.type,
-						blockActionsPayload.view.type as ChannelType,
-						slackClient,
-						flattenedInputs,
-						buttonClick,
-					);
-					console.log("RENDERING BLOCKS", blocks);
-					if (blockActionsPayload.view.type === "modal") {
-						await updateModal(
-							slackClient,
-							blockActionsPayload.view.id,
-							blocks,
-							action.name,
-							"Submit",
-						);
-					} else {
-						await publishHomeTab(
-							slackClient,
-							blockActionsPayload.user.id,
-							blocks,
-							action.name,
-						);
-					}
-				}
-				return c.text("");
-			} else {
-				const intendedAction = getActionValue(actionInput);
-				const action = bot.getAction(intendedAction);
-				const blocks = await action.run(
-					blockActionsPayload.user.id,
-					blockActionsPayload.view.type,
-					blockActionsPayload.view.type as ChannelType,
-					slackClient,
-				);
-				if (blockActionsPayload.view.type === "modal") {
-					await updateModal(
-						slackClient,
-						blockActionsPayload.view.id,
-						blocks,
-						action.name,
-						"Submit",
-					);
-				} else {
-					await publishHomeTab(
-						slackClient,
-						blockActionsPayload.user.id,
-						blocks,
-						action.name,
-					);
-				}
-				return c.text("");
-			}
-		} else console.log("No payload tag", JSON.parse(body.payload));
-	} else {
-		console.log("Unhandled event", body);
+	// Handle URL verification challenge
+	if ("challenge" in body && body.type === "url_verification") {
+		const challenge: SlackChallenge = body;
+		return c.text(challenge.challenge);
 	}
+
+	// Handle event callbacks
+	if ("event" in body && body.type === "event_callback") {
+		const eventCallback: SlackEventCallback = body;
+
+		switch (eventCallback.event.type) {
+			case "app_home_opened":
+				console.log("APP HOME OPENED", JSON.stringify(eventCallback, null, 2));
+				break;
+			case "slash_command":
+				console.log(
+					"SLASH COMMAND PAYLOAD",
+					JSON.stringify(eventCallback, null, 2),
+				);
+				break;
+			case "app_mention": {
+				const appMentionEvent: AppMentionEvent = eventCallback.event;
+				console.log("APP MENTION", JSON.stringify(eventCallback, null, 2));
+				let threadMessages:
+					| ConversationsRepliesResponse["messages"]
+					| undefined;
+
+				if (appMentionEvent.thread_ts) {
+					threadMessages = await getThreadReplies(
+						getSlackClient(c.env),
+						appMentionEvent.channel,
+						appMentionEvent.thread_ts,
+					);
+					console.log("THREAD", JSON.stringify(threadMessages, null, 2));
+				}
+
+				// Build structured context for customer worker
+				const context: BarbellContext = {
+					threadMessages: threadMessages?.map((msg) => ({
+						user: msg.user,
+						text: msg.text,
+						ts: msg.ts,
+						thread_ts: msg.thread_ts,
+						type: msg.type,
+						bot_id: msg.bot_id,
+						app_id: msg.app_id,
+					})),
+					event: {
+						channel: appMentionEvent.channel,
+						user: appMentionEvent.user,
+						text: appMentionEvent.text,
+						ts: appMentionEvent.ts,
+						thread_ts: appMentionEvent.thread_ts,
+					},
+				};
+
+				// Dispatch to customer worker with JSON context
+				const worker = c.env.DISPATCHER.get("customer-worker-1");
+				const response = await worker.fetch(
+					new Request("https://internal/", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify(context),
+					}),
+				);
+
+				// Parse the response
+				const result = (await response.json()) as WorkerResponse;
+
+				if (result.error) {
+					console.error("Customer worker error:", result.message);
+					await sendMessage(
+						getSlackClient(c.env),
+						[
+							{
+								type: "section",
+								text: {
+									type: "mrkdwn",
+									text: `:warning: Error: ${result.message}`,
+								},
+							},
+						],
+						appMentionEvent.channel,
+						appMentionEvent.ts,
+						false,
+					);
+				} else if (result.blocks) {
+					await sendMessage(
+						getSlackClient(c.env),
+						result.blocks,
+						appMentionEvent.channel,
+						appMentionEvent.ts,
+						false,
+					);
+				}
+				break;
+			}
+		}
+		return c.text("");
+	}
+
+	// Handle interactive payloads
+	if ("type" in body && "actions" in body) {
+		const interactivePayload: SlackInteractivePayload = body;
+		console.log("Interactive Payload", interactivePayload);
+		return c.text("");
+	}
+
+	// Handle payload string (from form-encoded interactive components)
+	if ("payload" in body && typeof body.payload === "string") {
+		const payload: SlackInteractivePayload = JSON.parse(body.payload);
+		console.log("Command Payload", payload);
+		return c.text("");
+	}
+
+	console.log("Unhandled event", JSON.stringify(body, null, 2));
 	return c.text("");
 });
 
