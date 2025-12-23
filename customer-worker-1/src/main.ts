@@ -1,12 +1,6 @@
-import type {
-	BarbellContext,
-	BlockActionContext,
-	KnownBlock,
-	MessageContext,
-	View,
-} from "@barbell/sdk";
+import type { BarbellContext, KnownBlock, View } from "@barbell/sdk";
 
-function handleBlockAction(context: BlockActionContext): View {
+function renderModal(_context: BarbellContext): View {
 	return {
 		type: "modal",
 		callback_id: "comprehensive_form",
@@ -129,9 +123,39 @@ function handleBlockAction(context: BlockActionContext): View {
 	};
 }
 
-function handleMessageContext(context: MessageContext): KnownBlock[] {
+function renderInitialMessage(context: BarbellContext): KnownBlock[] {
+	const { event } = context;
+	return [
+		{
+			type: "section",
+			text: {
+				type: "mrkdwn",
+				text: `Hello <@${event.user}>! Click the button below to open the project details form.`,
+			},
+		},
+		{
+			type: "actions",
+			elements: [
+				{
+					type: "button",
+					text: {
+						type: "plain_text",
+						text: "Open Modal",
+						emoji: true,
+					},
+					action_id: "open_project_modal",
+					style: "primary",
+				},
+			],
+		},
+	];
+}
+
+function renderMessage(context: BarbellContext): KnownBlock[] {
 	// Handle message context (thread messages)
-	const { threadMessages, event } = context;
+	const { event } = context;
+	const threadMessages =
+		"threadMessages" in context ? context.threadMessages : [];
 
 	// If there's no event context, return empty (shouldn't happen)
 	if (!event) {
@@ -556,10 +580,21 @@ function handleMessageContext(context: MessageContext): KnownBlock[] {
 export default async function main(
 	context: BarbellContext,
 ): Promise<KnownBlock[] | View> {
-	// Handle block actions (button clicks, etc.)
-	if ("blockAction" in context) {
-		return handleBlockAction(context);
+	// If it's a mention (MessageContext), show the initial message with a button
+	if (!("blockAction" in context)) {
+		return renderInitialMessage(context);
 	}
 
-	return handleMessageContext(context);
+	// If it's a block action (button click, etc.)
+	const actions = context.blockAction || [];
+	const isOpeningModal = actions.some(
+		(a) => a.action_id === "open_project_modal",
+	);
+
+	if (isOpeningModal) {
+		return renderModal(context);
+	}
+
+	// For other actions, show the standard message blocks
+	return renderMessage(context);
 }

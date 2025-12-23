@@ -8,6 +8,7 @@
 	],
 	"scripts": {
 		"build:packages": "bun run --filter '@barbell/*' build",
-		"lint:fix": "biome check --write"
+		"lint:fix": "biome check --write",
+		"deploy": "cd customer-worker-1 && bun run deploy"
 	}
 }
