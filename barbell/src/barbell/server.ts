@@ -1,8 +1,5 @@
 import type { WorkerResponse } from "@barbell/runtime";
-import type {
-	BlockActionContext,
-	MessageContext,
-} from "@barbell/sdk/dist/context";
+import type { BlockActionContext, MessageContext } from "@barbell/sdk";
 import type { ConversationsRepliesResponse } from "@slack/web-api";
 import { Hono } from "hono";
 import { ENVIRONMENT } from "./consts";
@@ -13,7 +10,12 @@ import type {
 	SlackInteractivePayload,
 	SlackWebhookPayload,
 } from "./types/slack-events";
-import { getSlackClient, getThreadReplies, sendMessage } from "./utils/slack";
+import {
+	getSlackClient,
+	getThreadReplies,
+	openView,
+	sendMessage,
+} from "./utils/slack";
 
 const app = new Hono<{ Bindings: Env }>();
 app.get("/", (c) => {
@@ -89,6 +91,7 @@ app.post("/slack/events", async (c) => {
 						text: appMentionEvent.text,
 						ts: appMentionEvent.ts,
 						thread_ts: appMentionEvent.thread_ts,
+						trigger_id: appMentionEvent.trigger_id,
 					},
 				};
 
@@ -130,6 +133,14 @@ app.post("/slack/events", async (c) => {
 						appMentionEvent.ts,
 						false,
 					);
+				} else if (result.view) {
+					if (result.view.type === "modal" && context.event.trigger_id) {
+						await openView(
+							getSlackClient(c.env),
+							context.event.trigger_id,
+							result.view as any,
+						);
+					}
 				}
 				break;
 			}
@@ -156,6 +167,7 @@ app.post("/slack/events", async (c) => {
 		const messageTs = container?.message_ts || "";
 		const threadTs = container?.thread_ts;
 		const userId = interactivePayload.user?.id || "";
+		const triggerId = interactivePayload.trigger_id;
 
 		// Map actions to BlockAction format
 		const blockActions = (interactivePayload.actions || []).map((action) => ({
@@ -176,6 +188,7 @@ app.post("/slack/events", async (c) => {
 				text: "", // Interactive payloads don't have message text
 				ts: messageTs,
 				thread_ts: threadTs,
+				trigger_id: triggerId,
 			},
 			blockAction: blockActions,
 		};
@@ -218,6 +231,10 @@ app.post("/slack/events", async (c) => {
 				messageTs,
 				false,
 			);
+		} else if (result.view) {
+			if (result.view.type === "modal" && triggerId) {
+				await openView(getSlackClient(c.env), triggerId, result.view as any);
+			}
 		}
 		return c.text("");
 	}

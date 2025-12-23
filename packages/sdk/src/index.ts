@@ -93,11 +93,13 @@ export type {
 	ThreadMessage,
 } from "./context";
 
-import type { KnownBlock } from "./blocks";
+import type { KnownBlock, View } from "./blocks";
 // Main function type
 import type { BarbellContext } from "./context";
 
 /**
  * The type signature for the customer's main function.
  */
-export type MainFunction = (context: BarbellContext) => Promise<KnownBlock[]>;
+export type MainFunction = (
+	context: BarbellContext,
+) => Promise<KnownBlock[] | View>;

@@ -3,18 +3,130 @@ import type {
 	BlockActionContext,
 	KnownBlock,
 	MessageContext,
+	View,
 } from "@barbell/sdk";
 
-function handleBlockAction(context: BlockActionContext): KnownBlock[] {
-	return [
-		{
-			type: "section",
-			text: {
-				type: "mrkdwn",
-				text: `Nice!\n\`\`\`${JSON.stringify(context.blockAction, null, 2)}\`\`\``,
-			},
+function handleBlockAction(context: BlockActionContext): View {
+	return {
+		type: "modal",
+		callback_id: "comprehensive_form",
+		title: {
+			type: "plain_text",
+			text: "Project Details",
 		},
-	];
+		submit: {
+			type: "plain_text",
+			text: "Submit",
+		},
+		close: {
+			type: "plain_text",
+			text: "Cancel",
+		},
+		blocks: [
+			{
+				type: "input",
+				block_id: "text_block",
+				element: {
+					type: "plain_text_input",
+					action_id: "project_name",
+					placeholder: {
+						type: "plain_text",
+						text: "Enter project name",
+					},
+				},
+				label: {
+					type: "plain_text",
+					text: "Project Name",
+				},
+			},
+			{
+				type: "input",
+				block_id: "dropdown_block",
+				element: {
+					type: "static_select",
+					action_id: "priority_select",
+					placeholder: {
+						type: "plain_text",
+						text: "Select priority",
+					},
+					options: [
+						{
+							text: { type: "plain_text", text: "High" },
+							value: "p1",
+						},
+						{
+							text: { type: "plain_text", text: "Medium" },
+							value: "p2",
+						},
+						{
+							text: { type: "plain_text", text: "Low" },
+							value: "p3",
+						},
+					],
+				},
+				label: {
+					type: "plain_text",
+					text: "Priority Level",
+				},
+			},
+			{
+				type: "input",
+				block_id: "date_block",
+				element: {
+					type: "datepicker",
+					action_id: "due_date",
+					initial_date: "2025-01-01",
+				},
+				label: {
+					type: "plain_text",
+					text: "Due Date",
+				},
+			},
+			{
+				type: "input",
+				block_id: "time_block",
+				element: {
+					type: "timepicker",
+					action_id: "due_time",
+					initial_time: "12:00",
+				},
+				label: {
+					type: "plain_text",
+					text: "Submission Time",
+				},
+			},
+			{
+				type: "input",
+				block_id: "multiselect_block",
+				element: {
+					type: "multi_static_select",
+					action_id: "team_members",
+					placeholder: {
+						type: "plain_text",
+						text: "Select teammates",
+					},
+					options: [
+						{
+							text: { type: "plain_text", text: "Design" },
+							value: "dept_design",
+						},
+						{
+							text: { type: "plain_text", text: "Engineering" },
+							value: "dept_eng",
+						},
+						{
+							text: { type: "plain_text", text: "Marketing" },
+							value: "dept_mktg",
+						},
+					],
+				},
+				label: {
+					type: "plain_text",
+					text: "Involved Departments",
+				},
+			},
+		],
+	};
 }
 
 function handleMessageContext(context: MessageContext): KnownBlock[] {
@@ -443,7 +555,7 @@ function handleMessageContext(context: MessageContext): KnownBlock[] {
  */
 export default async function main(
 	context: BarbellContext,
-): Promise<KnownBlock[]> {
+): Promise<KnownBlock[] | View> {
 	// Handle block actions (button clicks, etc.)
 	if ("blockAction" in context) {
 		return handleBlockAction(context);

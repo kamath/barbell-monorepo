@@ -1,10 +1,16 @@
-import type { BarbellContext, KnownBlock, MainFunction } from "@barbell/sdk";
+import type {
+	BarbellContext,
+	KnownBlock,
+	MainFunction,
+	View,
+} from "@barbell/sdk";
 
 /**
  * Response format returned by the worker.
  */
 export interface WorkerResponse {
 	blocks?: KnownBlock[];
+	view?: View;
 	error?: boolean;
 	message?: string;
 }
@@ -24,10 +30,16 @@ export function createWorker(main: MainFunction) {
 				const context: BarbellContext = await request.json();
 
 				// Call customer's main function
-				const blocks: KnownBlock[] = await main(context);
+				const result: KnownBlock[] | View = await main(context);
 
-				// Return blocks as JSON
-				const response: WorkerResponse = { blocks };
+				// Return blocks or view as JSON
+				const response: WorkerResponse = {};
+				if (Array.isArray(result)) {
+					response.blocks = result;
+				} else {
+					response.view = result;
+				}
+
 				return new Response(JSON.stringify(response), {
 					headers: { "Content-Type": "application/json" },
 				});

@@ -27,6 +27,8 @@ export interface EventContext {
 	ts: string;
 	/** Thread timestamp (if in a thread) */
 	thread_ts?: string;
+	/** Trigger ID for opening modals (available for interactive actions) */
+	trigger_id?: string;
 }
 
 /**

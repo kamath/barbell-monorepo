@@ -15,6 +15,7 @@ export interface AppMentionEvent extends SlackEventBase {
 	channel: string;
 	channel_type?: string;
 	thread_ts?: string;
+	trigger_id?: string;
 }
 
 export interface AppHomeOpenedEvent extends SlackEventBase {
