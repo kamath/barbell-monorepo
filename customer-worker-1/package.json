@@ -1,22 +1,23 @@
 {
-	"name": "customer-worker-1",
-	"version": "0.0.0",
-	"private": true,
-	"scripts": {
-		"deploy": "wrangler deploy --dispatch-namespace testing",
-		"dev": "wrangler dev",
-		"start": "wrangler dev",
-		"test": "vitest",
-		"cf-typegen": "wrangler types"
-	},
-	"dependencies": {
-		"@barbell/runtime": "workspace:*"
-	},
-	"devDependencies": {
-		"@barbell/sdk": "workspace:*",
-		"@cloudflare/vitest-pool-workers": "^0.8.19",
-		"typescript": "^5.5.2",
-		"vitest": "~3.2.0",
-		"wrangler": "^4.56.0"
-	}
+  "name": "customer-worker-1",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy --dispatch-namespace testing",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "test": "vitest",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@barbell/runtime": "workspace:*",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@barbell/sdk": "workspace:*",
+    "@cloudflare/vitest-pool-workers": "^0.8.19",
+    "typescript": "^5.5.2",
+    "vitest": "~3.2.0",
+    "wrangler": "^4.56.0"
+  }
 }

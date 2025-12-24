@@ -103,3 +103,7 @@ import type { BarbellContext } from "./context";
 export type MainFunction = (
 	context: BarbellContext,
 ) => Promise<KnownBlock[] | View>;
+
+// Schema utilities
+export { jsonSchemaToInputBlocks } from "./schema";
+export type { JsonSchemaToInputBlocksOptions } from "./schema";

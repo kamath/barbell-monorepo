@@ -1,6 +1,25 @@
 import type { BarbellContext, KnownBlock, View } from "@barbell/sdk";
+import { jsonSchemaToInputBlocks } from "@barbell/sdk";
+import { z } from "zod";
+
+const toolSchema = z.object({
+	project_name: z.string().describe("Enter project name"),
+	email: z.email().describe("Enter email").default("test@test.com"),
+	priority_select: z
+		.enum(["High", "Medium", "Low"])
+		.describe("Select priority"),
+	due_date: z.iso.date().describe("Due Date"),
+	due_time: z.iso.time().describe("Submission Time"),
+	team_members: z
+		.array(z.enum(["Design", "Engineering", "Marketing"]))
+		.describe("Select teammates"),
+});
 
 function renderModal(_context: BarbellContext): View {
+	// Convert Zod schema to JSON Schema, then to Slack input blocks
+	const jsonSchema = z.toJSONSchema(toolSchema);
+	const blocks = jsonSchemaToInputBlocks(jsonSchema);
+
 	return {
 		type: "modal",
 		callback_id: "comprehensive_form",
@@ -16,110 +35,7 @@ function renderModal(_context: BarbellContext): View {
 			type: "plain_text",
 			text: "Cancel",
 		},
-		blocks: [
-			{
-				type: "input",
-				block_id: "text_block",
-				element: {
-					type: "plain_text_input",
-					action_id: "project_name",
-					placeholder: {
-						type: "plain_text",
-						text: "Enter project name",
-					},
-				},
-				label: {
-					type: "plain_text",
-					text: "Project Name",
-				},
-			},
-			{
-				type: "input",
-				block_id: "dropdown_block",
-				element: {
-					type: "static_select",
-					action_id: "priority_select",
-					placeholder: {
-						type: "plain_text",
-						text: "Select priority",
-					},
-					options: [
-						{
-							text: { type: "plain_text", text: "High" },
-							value: "p1",
-						},
-						{
-							text: { type: "plain_text", text: "Medium" },
-							value: "p2",
-						},
-						{
-							text: { type: "plain_text", text: "Low" },
-							value: "p3",
-						},
-					],
-				},
-				label: {
-					type: "plain_text",
-					text: "Priority Level",
-				},
-			},
-			{
-				type: "input",
-				block_id: "date_block",
-				element: {
-					type: "datepicker",
-					action_id: "due_date",
-					initial_date: "2025-01-01",
-				},
-				label: {
-					type: "plain_text",
-					text: "Due Date",
-				},
-			},
-			{
-				type: "input",
-				block_id: "time_block",
-				element: {
-					type: "timepicker",
-					action_id: "due_time",
-					initial_time: "12:00",
-				},
-				label: {
-					type: "plain_text",
-					text: "Submission Time",
-				},
-			},
-			{
-				type: "input",
-				block_id: "multiselect_block",
-				element: {
-					type: "multi_static_select",
-					action_id: "team_members",
-					placeholder: {
-						type: "plain_text",
-						text: "Select teammates",
-					},
-					options: [
-						{
-							text: { type: "plain_text", text: "Design" },
-							value: "dept_design",
-						},
-						{
-							text: { type: "plain_text", text: "Engineering" },
-							value: "dept_eng",
-						},
-						{
-							text: { type: "plain_text", text: "Marketing" },
-							value: "dept_mktg",
-						},
-					],
-				},
-				label: {
-					type: "plain_text",
-					text: "Involved Departments",
-				},
-			},
-		],
+		blocks,
 	};
 }
 

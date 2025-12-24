@@ -29,5 +29,8 @@
 	"license": "MIT",
 	"dependencies": {
 		"@slack/web-api": "^7.13.0"
+	},
+	"peerDependencies": {
+		"zod": "^4.0.0"
 	}
 }
