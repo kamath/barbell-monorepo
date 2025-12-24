@@ -1,6 +1,6 @@
 import type { BarbellContext, KnownBlock, View } from "@barbell/sdk";
 import { jsonSchemaToInputBlocks } from "@barbell/sdk";
-import { Tool } from "ai";
+import type { Tool } from "ai";
 import { z } from "zod";
 
 const tools: Record<string, Tool> = {
@@ -40,7 +40,7 @@ const tools: Record<string, Tool> = {
 };
 
 function renderModal(
-	_context: BarbellContext,
+	context: BarbellContext,
 	toolName: keyof typeof tools,
 ): View {
 	// Convert Zod schema to JSON Schema, then to Slack input blocks
@@ -48,6 +48,13 @@ function renderModal(
 	const zodSchema = inputSchema as unknown as z.ZodTypeAny;
 	const jsonSchema = z.toJSONSchema(zodSchema);
 	const blocks = jsonSchemaToInputBlocks(jsonSchema);
+
+	// Store channel and thread context in private_metadata so we can respond in the same thread
+	const privateMetadata = JSON.stringify({
+		channel: context.event.channel,
+		thread_ts: context.event.thread_ts,
+		ts: context.event.ts,
+	});
 
 	return {
 		type: "modal",
@@ -65,6 +72,7 @@ function renderModal(
 			text: "Cancel",
 		},
 		blocks,
+		private_metadata: privateMetadata,
 	};
 }
 
@@ -519,12 +527,154 @@ function renderMessage(context: BarbellContext): KnownBlock[] {
 }
 
 /**
+ * Parses view submission values into a flat object keyed by action_id.
+ * Handles the nested structure: block_id -> action_id -> value
+ */
+function parseViewSubmissionValues(
+	values: Record<string, Record<string, unknown>>,
+): Record<string, unknown> {
+	const parsed: Record<string, unknown> = {};
+
+	for (const blockId in values) {
+		const blockValues = values[blockId];
+		for (const actionId in blockValues) {
+			const valueObj = blockValues[actionId] as {
+				type?: string;
+				value?: string;
+				selected_date?: string;
+				selected_time?: string;
+				selected_option?: { value: string };
+				selected_options?: Array<{ value: string }>;
+			};
+
+			if (valueObj.type === "plain_text_input") {
+				parsed[actionId] = valueObj.value || "";
+			} else if (valueObj.type === "static_select") {
+				parsed[actionId] = valueObj.selected_option?.value || "";
+			} else if (valueObj.type === "multi_static_select") {
+				parsed[actionId] =
+					valueObj.selected_options?.map((opt) => opt.value) || [];
+			} else if (valueObj.type === "datepicker") {
+				parsed[actionId] = valueObj.selected_date || "";
+			} else if (valueObj.type === "timepicker") {
+				parsed[actionId] = valueObj.selected_time || "";
+			} else {
+				// Fallback: try to extract value or selected_option
+				parsed[actionId] =
+					valueObj.value ||
+					valueObj.selected_option?.value ||
+					valueObj.selected_date ||
+					valueObj.selected_time ||
+					null;
+			}
+		}
+	}
+
+	return parsed;
+}
+
+/**
  * This is your main function. It receives context about the Slack event
  * and should return an array of Slack Block Kit blocks.
  */
 export default async function main(
 	context: BarbellContext,
 ): Promise<KnownBlock[] | View> {
+	// Handle view submission (modal form submission)
+	if ("viewSubmission" in context) {
+		// Type assertion: context is ViewSubmissionContext when viewSubmission exists
+		const { callback_id, values } = (
+			context as {
+				viewSubmission: {
+					callback_id: string;
+					values: Record<string, Record<string, unknown>>;
+				};
+			}
+		).viewSubmission;
+
+		// Map callback_id to tool name
+		// For now, we'll use callback_id "comprehensive_form" -> "project_details"
+		if (callback_id === "comprehensive_form") {
+			const toolName: keyof typeof tools = "project_details";
+			const tool = tools[toolName];
+
+			if (!tool || !tool.execute) {
+				console.error(`Tool not found or invalid: ${toolName}`);
+				return [];
+			}
+
+			// Parse the nested view values into a flat object
+			const parsedValues = parseViewSubmissionValues(values);
+
+			// Execute the tool with parsed values
+			// Tool.execute expects a single object parameter matching the inputSchema
+			try {
+				await (
+					tool.execute as (params: Record<string, unknown>) => Promise<void>
+				)(parsedValues);
+			} catch (error) {
+				console.error("Tool execution error:", error);
+				// Return error blocks to show in thread
+				return [
+					{
+						type: "section",
+						text: {
+							type: "mrkdwn",
+							text: `:warning: Error processing form: ${error instanceof Error ? error.message : "Unknown error"}`,
+						},
+					},
+				];
+			}
+
+			// Return blocks to display in the thread
+			return [
+				{
+					type: "section",
+					text: {
+						type: "mrkdwn",
+						text: `:white_check_mark: Project details submitted successfully!`,
+					},
+				},
+				{
+					type: "section",
+					fields: [
+						{
+							type: "mrkdwn",
+							text: `*Project Name:*\n${parsedValues.project_name || "N/A"}`,
+						},
+						{
+							type: "mrkdwn",
+							text: `*Priority:*\n${parsedValues.priority_select || "N/A"}`,
+						},
+						{
+							type: "mrkdwn",
+							text: `*Due Date:*\n${parsedValues.due_date || "N/A"}`,
+						},
+						{
+							type: "mrkdwn",
+							text: `*Due Time:*\n${parsedValues.due_time || "N/A"}`,
+						},
+					],
+				},
+				...(Array.isArray(parsedValues.team_members) &&
+				parsedValues.team_members.length > 0
+					? [
+							{
+								type: "section",
+								text: {
+									type: "mrkdwn",
+									text: `*Involved Departments:*\n${parsedValues.team_members.join(", ")}`,
+								},
+							} as KnownBlock,
+						]
+					: []),
+			];
+		}
+
+		// Unknown callback_id, return empty to close modal
+		return [];
+	}
+
 	// If it's a mention (MessageContext), show the initial message with a button
 	if (!("blockAction" in context)) {
 		return renderInitialMessage(context);

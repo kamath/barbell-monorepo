@@ -3,6 +3,8 @@ import type {
 	BlockActionContext,
 	MessageContext,
 	ModalView,
+	ViewStateValue,
+	ViewSubmissionContext,
 } from "@barbell/sdk";
 import type { ConversationsRepliesResponse } from "@slack/web-api";
 import { Hono } from "hono";
@@ -12,6 +14,7 @@ import type {
 	SlackChallenge,
 	SlackEventCallback,
 	SlackInteractivePayload,
+	SlackViewSubmissionPayload,
 	SlackWebhookPayload,
 } from "./types/slack-events";
 import {
@@ -245,6 +248,99 @@ app.post("/slack/events", async (c) => {
 			}
 		}
 		return c.text("");
+	}
+
+	// Handle view submission payloads
+	if ("type" in body && body.type === "view_submission") {
+		const viewSubmissionPayload: SlackViewSubmissionPayload = body;
+		console.log("View Submission Payload", viewSubmissionPayload);
+
+		const userId = viewSubmissionPayload.user?.id || "";
+		const triggerId = viewSubmissionPayload.trigger_id;
+		const view = viewSubmissionPayload.view;
+		const callbackId = view?.callback_id || "";
+		const privateMetadata = view?.private_metadata;
+		const viewStateValues = view?.state?.values || {};
+
+		// Build structured context for customer worker
+		const context: ViewSubmissionContext = {
+			event: {
+				channel: "", // View submissions don't have channel context
+				user: userId,
+				text: "", // View submissions don't have message text
+				ts: "", // View submissions don't have message timestamp
+				trigger_id: triggerId,
+			},
+			viewSubmission: {
+				callback_id: callbackId,
+				values: viewStateValues as Record<
+					string,
+					Record<string, ViewStateValue>
+				>,
+				private_metadata: privateMetadata,
+			},
+		};
+
+		// Dispatch to customer worker with JSON context
+		const worker = c.env.DISPATCHER.get("customer-worker-1");
+		const response = await worker.fetch(
+			new Request("https://internal/", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(context),
+			}),
+		);
+
+		// Parse the response
+		const result = (await response.json()) as WorkerResponse;
+
+		if (result.error) {
+			console.error("Customer worker error:", result.message);
+			// For view_submission errors, we can return error response to show validation errors
+			// Returning empty response closes the modal
+			return c.json({
+				response_action: "errors",
+				errors: {
+					// Slack expects errors keyed by block_id
+					// For now, we'll just close the modal on error
+				},
+			});
+		}
+
+		// Parse private_metadata to get channel and thread context
+		let channel = "";
+		let threadTs: string | undefined;
+		if (privateMetadata) {
+			try {
+				const metadata = JSON.parse(privateMetadata) as {
+					channel?: string;
+					thread_ts?: string;
+					ts?: string;
+				};
+				channel = metadata.channel || "";
+				threadTs = metadata.thread_ts || metadata.ts;
+			} catch (e) {
+				console.error("Failed to parse private_metadata:", e);
+			}
+		}
+
+		// If we have blocks to send and channel context, send them to the thread
+		if (result.blocks && channel) {
+			await sendMessage(
+				getSlackClient(c.env),
+				result.blocks,
+				channel,
+				threadTs,
+				false,
+			);
+		}
+
+		// For view_submission, returning empty 200 closes the modal
+		// If we want to update the modal or show errors, we can return:
+		// - { response_action: "update", view: {...} } to update modal
+		// - { response_action: "errors", errors: {...} } to show validation errors
+		// - {} or empty response to close modal
+		return c.json({});
 	}
 
 	console.log("Unhandled event", JSON.stringify(body, null, 2));

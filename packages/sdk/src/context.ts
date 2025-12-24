@@ -64,6 +64,34 @@ export interface BlockAction {
 	};
 }
 
+/**
+ * Represents a value from a view submission form field.
+ * Matches the structure of values in Slack's view_submission payload.
+ */
+export interface ViewStateValue {
+	type: string;
+	value?: string;
+	selected_date?: string;
+	selected_time?: string;
+	selected_option?: {
+		text: {
+			type: string;
+			text: string;
+			emoji?: boolean;
+		};
+		value: string;
+	};
+	selected_options?: Array<{
+		text: {
+			type: string;
+			text: string;
+			emoji?: boolean;
+		};
+		value: string;
+	}>;
+	[key: string]: unknown;
+}
+
 type BaseContext = {
 	event: EventContext;
 	metadata?: Record<string, unknown>;
@@ -80,4 +108,15 @@ export type BlockActionContext = BaseContext & {
 	blockAction: BlockAction[];
 };
 
-export type BarbellContext = MessageContext | BlockActionContext;
+export type ViewSubmissionContext = BaseContext & {
+	viewSubmission: {
+		callback_id: string;
+		values: Record<string, Record<string, ViewStateValue>>;
+		private_metadata?: string;
+	};
+};
+
+export type BarbellContext =
+	| MessageContext
+	| BlockActionContext
+	| ViewSubmissionContext;
