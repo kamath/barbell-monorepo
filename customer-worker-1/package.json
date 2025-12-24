@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@barbell/runtime": "workspace:*",
+    "ai": "^6.0.3",
     "zod": "^4.2.1"
   },
   "devDependencies": {

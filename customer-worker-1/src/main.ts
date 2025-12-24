@@ -1,23 +1,52 @@
 import type { BarbellContext, KnownBlock, View } from "@barbell/sdk";
 import { jsonSchemaToInputBlocks } from "@barbell/sdk";
+import { Tool } from "ai";
 import { z } from "zod";
 
-const toolSchema = z.object({
-	project_name: z.string().describe("Enter project name"),
-	email: z.email().describe("Enter email").default("test@test.com"),
-	priority_select: z
-		.enum(["High", "Medium", "Low"])
-		.describe("Select priority"),
-	due_date: z.iso.date().describe("Due Date"),
-	due_time: z.iso.time().describe("Submission Time"),
-	team_members: z
-		.array(z.enum(["Design", "Engineering", "Marketing"]))
-		.describe("Select teammates"),
-});
+const tools: Record<string, Tool> = {
+	project_details: {
+		description: "Enter project details",
+		inputSchema: z.object({
+			project_name: z.string().describe("Enter project name"),
+			email: z.email().describe("Enter email").default("test@test.com"),
+			priority_select: z
+				.enum(["High", "Medium", "Low"])
+				.describe("Select priority"),
+			due_date: z.iso.date().describe("Due Date"),
+			due_time: z.iso.time().describe("Submission Time"),
+			team_members: z
+				.array(z.enum(["Design", "Engineering", "Marketing"]))
+				.describe("Select teammates"),
+		}),
+		execute: async ({
+			project_name,
+			email,
+			priority_select,
+			due_date,
+			due_time,
+			team_members,
+		}) => {
+			console.log(
+				"EXECUTING TOOL: project_details",
+				project_name,
+				email,
+				priority_select,
+				due_date,
+				due_time,
+				team_members,
+			);
+		},
+	},
+};
 
-function renderModal(_context: BarbellContext): View {
+function renderModal(
+	_context: BarbellContext,
+	toolName: keyof typeof tools,
+): View {
 	// Convert Zod schema to JSON Schema, then to Slack input blocks
-	const jsonSchema = z.toJSONSchema(toolSchema);
+	const inputSchema = tools[toolName].inputSchema;
+	const zodSchema = inputSchema as unknown as z.ZodTypeAny;
+	const jsonSchema = z.toJSONSchema(zodSchema);
 	const blocks = jsonSchemaToInputBlocks(jsonSchema);
 
 	return {
@@ -508,7 +537,7 @@ export default async function main(
 	);
 
 	if (isOpeningModal) {
-		return renderModal(context);
+		return renderModal(context, "project_details");
 	}
 
 	// For other actions, show the standard message blocks
