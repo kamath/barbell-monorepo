@@ -15,6 +15,7 @@ export interface AppMentionEvent extends SlackEventBase {
 	channel: string;
 	channel_type?: string;
 	thread_ts?: string;
+	trigger_id?: string;
 }
 
 export interface AppHomeOpenedEvent extends SlackEventBase {
@@ -108,7 +109,82 @@ export interface SlackInteractivePayload {
 	}>;
 }
 
+export interface SlackViewSubmissionPayload {
+	type: "view_submission";
+	team?: {
+		id: string;
+		domain: string;
+	};
+	user?: {
+		id: string;
+		name: string;
+		username?: string;
+		team_id?: string;
+	};
+	api_app_id?: string;
+	token?: string;
+	trigger_id?: string;
+	view?: {
+		id?: string;
+		team_id?: string;
+		type?: string;
+		callback_id?: string;
+		private_metadata?: string;
+		state?: {
+			values?: Record<
+				string,
+				Record<
+					string,
+					| {
+							type: "plain_text_input";
+							value?: string;
+					  }
+					| {
+							type: "static_select";
+							selected_option?: {
+								text: {
+									type: string;
+									text: string;
+									emoji?: boolean;
+								};
+								value: string;
+							};
+					  }
+					| {
+							type: "multi_static_select";
+							selected_options?: Array<{
+								text: {
+									type: string;
+									text: string;
+									emoji?: boolean;
+								};
+								value: string;
+							}>;
+					  }
+					| {
+							type: "datepicker";
+							selected_date?: string;
+					  }
+					| {
+							type: "timepicker";
+							selected_time?: string;
+					  }
+					| {
+							type: string;
+							[key: string]: unknown;
+					  }
+				>
+			>;
+		};
+		[key: string]: unknown;
+	};
+	response_urls?: unknown[];
+	is_enterprise_install?: boolean;
+	enterprise?: unknown;
+}
+
 export type SlackWebhookPayload =
 	| SlackChallenge
 	| SlackEventCallback
-	| SlackInteractivePayload;
+	| SlackInteractivePayload
+	| SlackViewSubmissionPayload;

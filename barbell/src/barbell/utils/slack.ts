@@ -5,6 +5,7 @@ import {
 	type ConversationsRepliesResponse,
 	type KnownBlock,
 	LogLevel,
+	type View,
 	WebClient,
 } from "@slack/web-api";
 import { getSlackSecrets } from "../consts";
@@ -67,6 +68,17 @@ export const updateModal = async (
 			},
 			blocks,
 		},
+	});
+};
+
+export const openView = async (
+	client: WebClient,
+	trigger_id: string,
+	view: View,
+) => {
+	await client.views.open({
+		trigger_id,
+		view,
 	});
 };
 

@@ -91,13 +91,35 @@ export type {
 	EventContext,
 	MessageContext,
 	ThreadMessage,
+	ViewStateValue,
+	ViewSubmissionContext,
 } from "./context";
 
-import type { KnownBlock } from "./blocks";
+import type { KnownBlock, View } from "./blocks";
 // Main function type
-import type { BarbellContext } from "./context";
+import type { BarbellContext, MessageContext } from "./context";
 
 /**
  * The type signature for the customer's main function.
  */
-export type MainFunction = (context: BarbellContext) => Promise<KnownBlock[]>;
+export type MainFunction = (
+	context: BarbellContext,
+) => Promise<KnownBlock[] | View>;
+
+/**
+ * Configuration object that customers export from their worker.
+ * Contains tools and an optional function to choose which tool to use.
+ */
+export type BarbellConfig<
+	T extends Record<string, { inputSchema: unknown }> = Record<
+		string,
+		{ inputSchema: unknown }
+	>,
+> = {
+	tools: T;
+	chooseTool?: (ctx: MessageContext) => Promise<keyof T>;
+};
+
+// Schema utilities
+export { jsonSchemaToInputBlocks } from "./schema";
+export type { JsonSchemaToInputBlocksOptions } from "./schema";
