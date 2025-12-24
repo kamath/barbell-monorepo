@@ -91,6 +91,7 @@ export type {
 	EventContext,
 	MessageContext,
 	ThreadMessage,
+	ViewSubmissionContext,
 } from "./context";
 
 import type { KnownBlock, View } from "./blocks";

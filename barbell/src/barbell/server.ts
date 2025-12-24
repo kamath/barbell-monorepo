@@ -1,5 +1,9 @@
 import type { WorkerResponse } from "@barbell/runtime";
-import type { BlockActionContext, MessageContext } from "@barbell/sdk";
+import type {
+	BlockActionContext,
+	MessageContext,
+	ViewSubmissionContext,
+} from "@barbell/sdk";
 import type { ConversationsRepliesResponse } from "@slack/web-api";
 import { Hono } from "hono";
 import { ENVIRONMENT } from "./consts";
@@ -8,6 +12,7 @@ import type {
 	SlackChallenge,
 	SlackEventCallback,
 	SlackInteractivePayload,
+	SlackViewSubmissionPayload,
 	SlackWebhookPayload,
 } from "./types/slack-events";
 import {
@@ -236,6 +241,48 @@ app.post("/slack/events", async (c) => {
 				await openView(getSlackClient(c.env), triggerId, result.view as any);
 			}
 		}
+		return c.text("");
+	}
+
+	// Handle modal submissions
+	if ("type" in body && body.type === "view_submission") {
+		const payload = body as SlackViewSubmissionPayload;
+		const userId = payload.user?.id || "";
+
+		// Build structured context for customer worker
+		const context: ViewSubmissionContext = {
+			event: {
+				channel: "", // View submissions don't always have a channel
+				user: userId,
+				text: "",
+				ts: "",
+				trigger_id: "",
+			},
+			view: {
+				callback_id: payload.view?.callback_id || "",
+				private_metadata: payload.view?.private_metadata,
+				state: payload.view?.state?.values || {},
+			},
+		};
+
+		// Dispatch to customer worker
+		const worker = c.env.DISPATCHER.get("customer-worker-1");
+		const response = await worker.fetch(
+			new Request("https://internal/", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(context),
+			}),
+		);
+
+		const result = (await response.json()) as WorkerResponse;
+
+		if (result.error) {
+			console.error("Customer worker error:", result.message);
+		}
+
+		// Slack expects an empty response (200 OK) for view_submission
+		// or a special response for validation errors.
 		return c.text("");
 	}
 
