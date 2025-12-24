@@ -109,29 +109,7 @@ export interface SlackInteractivePayload {
 	}>;
 }
 
-export interface SlackViewSubmissionPayload {
-	type: "view_submission";
-	team?: {
-		id: string;
-		domain: string;
-	};
-	user?: {
-		id: string;
-		name: string;
-		username?: string;
-		team_id?: string;
-	};
-	view: {
-		callback_id: string;
-		private_metadata?: string;
-		state: {
-			values: Record<string, Record<string, unknown>>;
-		};
-	};
-}
-
 export type SlackWebhookPayload =
 	| SlackChallenge
 	| SlackEventCallback
-	| SlackInteractivePayload
-	| SlackViewSubmissionPayload;
+	| SlackInteractivePayload;

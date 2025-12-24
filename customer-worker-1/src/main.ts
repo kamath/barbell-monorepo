@@ -1,9 +1,4 @@
-import type {
-	BarbellContext,
-	KnownBlock,
-	View,
-	ViewSubmissionContext,
-} from "@barbell/sdk";
+import type { BarbellContext, KnownBlock, View } from "@barbell/sdk";
 
 function renderModal(_context: BarbellContext): View {
 	return {
@@ -585,41 +580,21 @@ function renderMessage(context: BarbellContext): KnownBlock[] {
 export default async function main(
 	context: BarbellContext,
 ): Promise<KnownBlock[] | View> {
-	// 1. Handle Modal Submissions
-	if ("view" in context) {
-		const viewContext = context as ViewSubmissionContext;
-		const { state } = viewContext.view;
-		const projectName = state.text_block?.project_name?.value;
-		const priority =
-			state.dropdown_block?.priority_select?.selected_option?.value;
-
-		console.log("Form submitted!", { projectName, priority });
-
-		return [
-			{
-				type: "section",
-				text: {
-					type: "mrkdwn",
-					text: `*Form Submitted!*\n*Project:* ${projectName}\n*Priority:* ${priority}`,
-				},
-			},
-		];
+	// If it's a mention (MessageContext), show the initial message with a button
+	if (!("blockAction" in context)) {
+		return renderInitialMessage(context);
 	}
 
-	// 2. Handle Block Actions (Buttons, etc.)
-	if ("blockAction" in context) {
-		const actions = context.blockAction || [];
-		const isOpeningModal = actions.some(
-			(a) => a.action_id === "open_project_modal",
-		);
+	// If it's a block action (button click, etc.)
+	const actions = context.blockAction || [];
+	const isOpeningModal = actions.some(
+		(a) => a.action_id === "open_project_modal",
+	);
 
-		if (isOpeningModal) {
-			return renderModal(context);
-		}
-
-		return renderMessage(context);
+	if (isOpeningModal) {
+		return renderModal(context);
 	}
 
-	// 3. Handle App Mentions (Initial Message)
-	return renderInitialMessage(context);
+	// For other actions, show the standard message blocks
+	return renderMessage(context);
 }

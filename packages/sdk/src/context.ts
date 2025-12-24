@@ -80,15 +80,4 @@ export type BlockActionContext = BaseContext & {
 	blockAction: BlockAction[];
 };
 
-export type ViewSubmissionContext = BaseContext & {
-	view: {
-		callback_id: string;
-		private_metadata?: string;
-		state: Record<string, Record<string, any>>;
-	};
-};
-
-export type BarbellContext =
-	| MessageContext
-	| BlockActionContext
-	| ViewSubmissionContext;
+export type BarbellContext = MessageContext | BlockActionContext;
