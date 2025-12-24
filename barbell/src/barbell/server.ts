@@ -1,5 +1,9 @@
 import type { WorkerResponse } from "@barbell/runtime";
-import type { BlockActionContext, MessageContext } from "@barbell/sdk";
+import type {
+	BlockActionContext,
+	MessageContext,
+	ModalView,
+} from "@barbell/sdk";
 import type { ConversationsRepliesResponse } from "@slack/web-api";
 import { Hono } from "hono";
 import { ENVIRONMENT } from "./consts";
@@ -138,7 +142,7 @@ app.post("/slack/events", async (c) => {
 						await openView(
 							getSlackClient(c.env),
 							context.event.trigger_id,
-							result.view as any,
+							result.view as ModalView,
 						);
 					}
 				}
@@ -233,7 +237,11 @@ app.post("/slack/events", async (c) => {
 			);
 		} else if (result.view) {
 			if (result.view.type === "modal" && triggerId) {
-				await openView(getSlackClient(c.env), triggerId, result.view as any);
+				await openView(
+					getSlackClient(c.env),
+					triggerId,
+					result.view as ModalView,
+				);
 			}
 		}
 		return c.text("");
